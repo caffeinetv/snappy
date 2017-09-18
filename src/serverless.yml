@@ -1,0 +1,118 @@
+# Serverless Config File
+# https://serverless.com/framework/docs/
+
+service: snappy
+
+custom:
+  # Mappings from environment name to variables
+  production:
+    gatewayName: v1
+    name:
+      human: Production
+      lower: production
+      short: prod
+  devtest:
+    gatewayName: devtest
+    name:
+      human: DevTest
+      lower: devtest
+      short: dev
+
+
+provider:
+  name: aws
+  region: us-west-2
+  runtime: python2.7
+  stage: ${self:custom.${env:SERVERLESS_ENV}.gatewayName}
+  memorySize: 1024
+  cfLogs: true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+      Resource:
+        - "arn:aws:s3:::bucket/*"
+
+# This is how we package the Lambda function code. We specifically do not
+# include vendored packages that are already in the Lambda runtime.
+package:
+  exclude:
+    - vendored/*.dist-info/**
+    - vendored/boto3*/**
+    - vendored/botocore*/**
+    - vendored/concurrent*/**
+    - vendored/dateutil*/**
+    - vendored/docutils*/**
+    - vendored/futures*/**
+    - vendored/jmespath*/**
+    - vendored/s3transfer*/**
+    - vendored/six*/**
+    - tests/**
+    - "**/*.pyc"
+
+# Service-wide environment variables here
+environment: &environment_defaults
+  SERVERLESS_ENV: ${env:SERVERLESS_ENV}
+
+# List of Lambda function
+functions:
+  events:
+    name: ${self:custom.${env:SERVERLESS_ENV}.name.lower}-snappy-transform
+    handler: transform.handler
+    timeout: 10
+    description: ${self:custom.${env:SERVERLESS_ENV}.name.human} Snappy transformation endpoint for manipulating images.
+    events:
+      - http:
+          method: get
+          path: /transform
+          cors:
+            origins:
+              - '*'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - x-client-type
+              - x-client-version
+    environment:
+      <<: *environment_defaults
+
+  logatron:
+    name: ${self:custom.${env:SERVERLESS_ENV}.name.lower}-snappy-logatron
+    handler: logatron.handler
+    timeout: 30
+    description: ${self:custom.${env:SERVERLESS_ENV}.name.human} Snappy self-log watcher and processor.
+    environment:
+      SERVERLESS_ENV: ${env:SERVERLESS_ENV}
+      SLACK_WEBHOOK_URL: https://hooks.slack.com/services/TODO
+
+
+# AWS Resources managed by Serverless
+resources:
+  Resources:
+    LogatronPermission:
+      Type: "AWS::Lambda::Permission"
+      Properties:
+        FunctionName:
+          Ref: LogatronLambdaFunction
+        Principal: "logs.us-west-2.amazonaws.com"
+        Action: "lambda:InvokeFunction"
+        SourceAccount:
+          Ref: AWS::AccountId
+        SourceArn: "arn:aws:logs:us-west-2:782097635144:log-group:/aws/lambda/${self:custom.${env:SERVERLESS_ENV}.name.lower}-snappy-*"
+
+    # Set up a log processor for each lambda function except logatron as that
+    # would be an infinite loop.
+    LogSubscriptionTransform:
+      Type: "AWS::Logs::SubscriptionFilter"
+      DependsOn: LogatronPermission
+      Properties:
+        LogGroupName:
+          Ref: TransformLogGroup
+        FilterPattern: ""
+        DestinationArn:
+          Fn::GetAtt:
+            - "LogatronLambdaFunction"
+            - "Arn"

@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -e
+
+source .env.sh
+
+
+case "$3" in
+  --help|-h|-help|"")
+    cat <<EOF
+NAME
+  tail-logs - Tails the CloudWatch Logs for a specific AWS Lambda function
+
+SYNOPSIS
+  ./tail-logs -e SERVERLESS_ENV FUNC
+
+OPTIONS
+  SERVERLESS_ENV   The name of the environment to run against.
+  FUNC             Serverless function name. E.g. hello
+
+EOF
+    exit 0
+    ;;
+  *)
+    func=$3
+    ;;
+esac
+
+cd src
+serverless logs -t -f $func

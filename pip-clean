@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ ! -f pip-clean ]; then
+  echo "ERROR: This script must be run from the directory it exists in"
+  echo $0
+  exit 1
+fi
+
+rm -r src/vendored
+git checkout -- src/vendored/__init__.py src/vendored/setup.cfg

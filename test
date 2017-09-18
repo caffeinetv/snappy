@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ ! -f test ]; then
+  echo "ERROR: This script must be run from the directory it exists in"
+  echo $0
+  exit 1
+fi
+
+# Anything after ./test will cause it to run only once
+if [ "$1" == "" ]; then
+  nose_args="--with-watch"
+else
+  nose_args=""
+fi
+
+cd src
+nosetests --rednose $nose_args

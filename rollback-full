@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e
+
+source .env.sh
+
+
+case "$3" in
+  --help|-h|-help|"")
+    cat <<EOF
+NAME
+  rollback - Performs a full rollback to the specified version
+
+SYNOPSIS
+  ./rollback -e SERVERLESS_ENV TIMESTAMP
+
+OPTIONS
+  SERVERLESS_ENV   The name of the environment to run against.
+  TIMESTAMP        The timestamp of the version to roll back to. E.g. 1492235541996
+
+LIST OF DEPLOYMENTS
+
+EOF
+    cd src
+    serverless deploy list
+    exit 0
+    ;;
+  *)
+    version=$3
+    ;;
+esac
+
+cd src
+serverless rollback -t $version

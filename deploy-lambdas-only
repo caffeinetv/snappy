@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e
+
+source .env.sh
+
+cd src
+
+funcs=$3
+if [ "$funcs" == "" ]; then
+  funcs="logatron"
+  funcs="$funcs transform"
+fi
+
+for f in $funcs; do
+  serverless deploy function -f $f
+done

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ ! -f pip-install-requirements ]; then
+  echo "ERROR: This script must be run from the directory it exists in"
+  echo $0
+  exit 1
+fi
+
+cd src/vendored
+pip install -r ../requirements.txt -t . --upgrade
