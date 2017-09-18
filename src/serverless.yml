@@ -11,18 +11,20 @@ custom:
       human: Production
       lower: production
       short: prod
+    bucket: my-bucket
   devtest:
     gatewayName: devtest
     name:
       human: DevTest
       lower: devtest
       short: dev
+    bucket: my-production-bucket
 
 
 provider:
   name: aws
   region: us-west-2
-  runtime: python2.7
+  runtime: python3.6
   stage: ${self:custom.${env:SERVERLESS_ENV}.gatewayName}
   memorySize: 1024
   cfLogs: true
@@ -53,10 +55,11 @@ package:
 # Service-wide environment variables here
 environment: &environment_defaults
   SERVERLESS_ENV: ${env:SERVERLESS_ENV}
+  BUCKET: ${self:custom.${env:SERVERLESS_ENV}.bucket}
 
 # List of Lambda function
 functions:
-  events:
+  transform:
     name: ${self:custom.${env:SERVERLESS_ENV}.name.lower}-snappy-transform
     handler: transform.handler
     timeout: 10
@@ -64,7 +67,7 @@ functions:
     events:
       - http:
           method: get
-          path: /transform
+          path: /
           cors:
             origins:
               - '*'

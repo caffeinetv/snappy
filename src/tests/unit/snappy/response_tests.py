@@ -19,10 +19,10 @@ class ResponseTests(unittest.TestCase):
                 "X-Amz-Security-Token,x-client-type,x-client-version"
             )
         )
-        self.assertEquals(res["body"], """{"x": 987}""")
+        self.assertEquals(res["body"], "Hello from test")
 
     def test_ok(self):
-        res = response.ok({"x": 987})
+        res = response.ok("Happy")
         self.assertEquals(res["statusCode"], 200)
         self.assertEquals(res["headers"]["Access-Control-Allow-Origin"], "*")
         self.assertEquals(
@@ -32,7 +32,7 @@ class ResponseTests(unittest.TestCase):
                 "X-Amz-Security-Token,x-client-type,x-client-version"
             )
         )
-        self.assertEquals(res["body"], """{"x": 987}""")
+        self.assertEquals(res["body"], "Happy")
 
     def test_error(self):
         res = response.error(666, {"x": 987})

@@ -99,3 +99,11 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Python dependencies for AWS Lambda deployment package installed with `deps`
+src/vendored/*
+!src/vendored/__init__.py
+!src/vendored/setup.cfg
+
+# Serverless
+.serverless

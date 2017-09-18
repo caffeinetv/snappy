@@ -50,3 +50,13 @@ Performs a full serverless rollback to the specified version. To list help and t
 All AWS Lambda functions log to CloudWatch Logs. You can login to the console and view them there, or run a script to tail the logs.
 
     ./tail-logs -e devtest hello
+
+
+### Testing
+
+We use nose for testing Python code. We also use the `nose-watch` addition for TDD. To run the tests:
+
+    mkvirtualenv
+    pip install -r src/dev_requirements.txt
+    pip install -r src/requirements.txt
+    ./test
