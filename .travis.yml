@@ -3,7 +3,7 @@ python:
   - "3.6"
 
 install:
-  - pip install -r src/dev_requirements.txt --upgrade
+  - pip install -r src/dev_requirements.txt
   - ./pip-install-requirements
 
 script:
