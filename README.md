@@ -1,5 +1,7 @@
 # Snappy
 
+[![Build Status](https://travis-ci.com/caffeinetv/snappy.svg?token=8muJrP6bsuRyDRQ1LQyY&branch=master)](https://travis-ci.com/caffeinetv/snappy)
+
 This is our image processing service. It is a replacement for [Imgix](https://docs.imgix.com/apis/url). It is designed to be used behind a CDN, such as CloudFront, to cache the results of the image manipulation. Snappy is also compatible with a subset of [Fastly’s Image Optimizer](https://docs.fastly.com/api/imageopto/#api).
 
 It uses Python 3.6 in AWS Lambda/API Gateway. It is deployed using [Serverless](https://serverless.com/framework/docs/).
