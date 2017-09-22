@@ -15,6 +15,24 @@ This project uses the [Serverless Framework](https://serverless.com/framework/do
 
 This project is a little unique in that it has both NodeJS and Python Lambda functions. NodeJS is only used for packaging and deployment, not during runtime.
 
+
+## Development
+
+We use GitHub Flow as our workflow so to set up:
+
+1.  Please *Fork* this repository to your own GitHub account
+1.  Clone your fork and then setup upstream
+        git clone git@github.com:USERNAME/snappy.git
+        cd snappy
+        git remote add upstream git@github.com:caffeinetv/snappy.git
+1.  Now you can create a feature branch
+        git checkout -b my-feature
+1.  Make changes, commit and push to your fork
+        git push origin my-feature
+1.  Now submit a pull request for code review
+1.  Once the code review has a "LGTM", merge.
+
+
 ## Scripts
 
 ### Dependencies for Lambda deploy
