@@ -1,5 +1,7 @@
 # Snappy
 
+[![Build Status](https://travis-ci.com/caffeinetv/snappy.svg?token=8muJrP6bsuRyDRQ1LQyY&branch=master)](https://travis-ci.com/caffeinetv/snappy)
+
 This is our image processing service. It is a replacement for [Imgix](https://docs.imgix.com/apis/url). It is designed to be used behind a CDN, such as CloudFront, to cache the results of the image manipulation. Snappy is also compatible with a subset of [Fastly’s Image Optimizer](https://docs.fastly.com/api/imageopto/#api).
 
 It uses Python 3.6 in AWS Lambda/API Gateway. It is deployed using [Serverless](https://serverless.com/framework/docs/).
@@ -12,6 +14,24 @@ This project uses the [Serverless Framework](https://serverless.com/framework/do
     npm install -g serverless
 
 This project is a little unique in that it has both NodeJS and Python Lambda functions. NodeJS is only used for packaging and deployment, not during runtime.
+
+
+## Development
+
+We use GitHub Flow as our workflow so to set up:
+
+1.  Please *Fork* this repository to your own GitHub account
+1.  Clone your fork and then setup upstream
+        git clone git@github.com:USERNAME/snappy.git
+        cd snappy
+        git remote add upstream git@github.com:caffeinetv/snappy.git
+1.  Now you can create a feature branch
+        git checkout -b my-feature
+1.  Make changes, commit and push to your fork
+        git push origin my-feature
+1.  Now submit a pull request for code review
+1.  Once the code review has a "LGTM", merge.
+
 
 ## Scripts
 
