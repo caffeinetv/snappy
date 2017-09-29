@@ -10,6 +10,7 @@ import vendored
 import boto3
 
 from snappy import response
+from snappy.settings import DEFAULT_FIT_BG_COLOR
 
 
 # Set up the default logger
@@ -53,19 +54,42 @@ def image_transform(filename, operations):
 	output = os.path.join(TMP_DIR, basename)
 	if 'w' in operations and 'h' in operations:
 		resize = (operations['w'], operations['h'])
-		args = ['convert', filename, '-resize', '{}x{}'.format(*resize)]
+		new_size = '{}x{}'.format(*resize)
+		args = ['convert', filename, '-thumbnail', new_size]
 		if 'fit' in operations:
 			if operations['fit'] == 'clip':
-				
+				pass
+			elif operations['fit'] == 'crop':
+				args[-1] += '^'
+				args.extend(['-background', DEFAULT_FIT_BG_COLOR, '-gravity', 'center', '-extent', new_size])
+			elif operations['fit'] == 'bounds':
+				args.extend(['-background', DEFAULT_FIT_BG_COLOR, '-gravity', 'center', '-extent', new_size])
 		else:
+			#
+			#  default behaviour is scale to the specificed bounds
+			#
 			args[-1] += '!'
+		#
+		# `thumbnail` already removes any image profile
+		# but not the ICC color profile by default
+		# so let's remove it as well with -strip
+		#
+		args.append('-strip')
+
 		args.append(output)
 		print ('args: {}'.format(args))
 		im_result = subprocess.check_output(args)
 		print (im_result.decode())
 	return output
 
-def param_validation():
+def param_validation(params):
+	"""
+	Validate the params and raise an Exception in case invalid or not supported operations
+	Returns
+    -------
+    dict
+        the validated params
+	"""
 	pass
 
 def make_response(image_data, s3_metadata):
@@ -73,7 +97,8 @@ def make_response(image_data, s3_metadata):
 
 
 def http_transform(s3_key, query_params):
-	image_data = transform()
+	# image_data = transform()
+	pass
 
 
 def handler(event, context):

@@ -1,0 +1,1 @@
+DEFAULT_FIT_BG_COLOR = 'black'
