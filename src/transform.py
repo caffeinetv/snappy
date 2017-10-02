@@ -4,6 +4,7 @@ import os
 import subprocess
 import ntpath
 import jsonschema
+from copy import copy
 
 # Import our dependencies
 import vendored
@@ -56,46 +57,88 @@ def image_transform(filename, operations):
     str
         the filename of the transformed image
     """
+    
+    args = ['convert', filename]
+
     basename = ntpath.basename(filename)
-    name, ext = basename.split('.')
+    name, ext = os.path.splitext(basename)
+    ext = ext.strip('.')
+
     if 'w' in operations and 'h' in operations:
         resize = (operations['w'], operations['h'])
         new_size = '{}x{}'.format(*resize)
-        args = ['convert', filename, '-thumbnail', new_size]
+        args.extend(['-resize', new_size])
         if 'fit' in operations:
             # TODO: REMOVEME: only for debugging
             name += '_' + operations['fit']
             if operations['fit'] == 'clip':
+                #
+                # ignore the aspect ratio and distort the image so it always
+                # generates an image exactly the size specified
+                #
                 args[-1] += '!'
             elif operations['fit'] == 'crop':
+                #
+                # `^` is used to resize the image based on the smallest fitting dimension
+                # then `-extents` crops exactly the image to the size specified from the center
+                #
                 args[-1] += '^'
                 args.extend(['-gravity', 'center', '-extent', new_size])
             elif operations['fit'] == 'bounds':
+                #
+                # by default `-resize` will fit the image into the requested size
+                # and keep the original aspect ratio
+                #
                 pass
         else:
             #
-            #  default behaviour is to scale to the specificed bounds
+            #  default behaviour is to force scaling to the specificed bounds
             #  which is the same behaviour as `fit=clip`
             #
-            args[-1] += '!'
+            new_ops = copy(operations)
+            new_ops.update({'fit': 'clip'})
+            return image_transform(filename, new_ops)
 
-        if 'auto' in operations and operations['auto'] == 'compress':
-            #
-            # `thumbnail` already removes any image profile
-            # but not the ICC color profile by default
-            # so let's remove it as well with `-strip
-            #
-            args.append('-strip')
+    #
+    # if only `w` or `h` is provided, then we scale target side
+    # to the specified value, and keep the aspect ratio.
+    # `fit` does not apply when only one side is given.
+    #
+    elif 'w' in operations:
+        new_size = '{}x'.format(operations['w'])
+        args.extend(['-resize', new_size])
+    elif 'h' in operations:
+        new_size = 'x{}'.format(operations['h'])
+        args.extend(['-resize', new_size])
 
-        output = os.path.join(
-            TMP_DIR, '{}_{}.{}'.format(name, rnd_str(5), ext))
-        args.append(output)
-        print('args: {}'.format(args))
-        im_result = subprocess.check_output(args)
-        print(im_result.decode())
+    if 'auto' in operations and operations['auto'] == 'compress':
+        #
+        # removes any image profile attached to the image
+        #
+        args.append('-strip')
 
-    if 'quality' in operations and ('format' in operations or ext.lower in ('jpg', 'jpeg')):
-        pass
+    if 'fm' in operations:
+        #
+        # just use the format as filename extension,
+        # then IM will handle conversion automatically
+        #
+        ext = operations['fm']
+
+    if 'q' in operations:
+        q = str(operations['q'])
+        if ext in LOSSY_IMAGE_FMTS or 'fm' in operations:
+            args.extend(['-quality', q])
+
+    if 'dpr' in operations:
+        dpr = str(operations['dpr'])
+        # TODO: use `-density` or `-resample` ?
+
+    output = os.path.join(
+        TMP_DIR, '{}_{}.{}'.format(name, rnd_str(5), ext))
+    args.append(output)
+    LOG.debug('args: {}'.format(args))
+    im_result = subprocess.check_output(args)
+    LOG.debug('IM output: {}'.format(im_result.decode()))
 
     return output
 
@@ -115,7 +158,6 @@ def normalize_params(params):
         value = v
         if type(v) == str:
             value = v.lower()
-
 
         #
         # convert full named keys into aliases
@@ -148,7 +190,6 @@ def param_validation(params):
             LOG.exception('Error validating schema for {}'.format(params))
             raise InvalidParamsError(
                 'Error validating params. Details: {}'.format(ve))
-
 
         if 'fit' in params and not ('w' in params or 'h' in params):
             raise InvalidParamsError(

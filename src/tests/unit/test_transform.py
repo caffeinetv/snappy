@@ -49,6 +49,32 @@ class ImageTranformTests(unittest.TestCase):
         operations = {'w': w, 'h': h, 'auto': 'compress'}
         output = image_transform(filename, operations)
         self.assertLess(os.stat(output).st_size, in_file_size)
+        operations = {'auto': 'compress'}
+        output = image_transform(filename, operations)
+        self.assertLess(os.stat(output).st_size, in_file_size)
+
+    def test_format(self):
+        filename = os.path.join(BASE_DIR, 'lincoln.jpg')
+        in_file_size = os.stat(filename).st_size
+        operations = {'fm': 'png'}
+        output = image_transform(filename, operations)
+        self.assertIn('png', output)
+        self.assertGreater(os.stat(output).st_size, in_file_size)
+
+        filename = os.path.join(BASE_DIR, 'terminal.gif')
+        in_file_size = os.stat(filename).st_size
+        operations = {'fm': 'jpeg', 'q': 10}
+        output = image_transform(filename, operations)
+        self.assertIn('jpeg', output)
+        self.assertGreater(os.stat(output).st_size, in_file_size)
+
+    def test_quality(self):
+        filename = os.path.join(BASE_DIR, 'lincoln.jpg')
+        in_file_size = os.stat(filename).st_size
+        operations = {'q': 50}
+        output = image_transform(filename, operations)
+        self.assertLess(os.stat(output).st_size, in_file_size)
+
 
 
 class ParamValidationTests(unittest.TestCase):
