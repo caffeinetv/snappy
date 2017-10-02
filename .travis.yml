@@ -7,4 +7,4 @@ install:
   - ./pip-install-requirements
 
 script:
-  - ./test --one-time
+  - ./test
