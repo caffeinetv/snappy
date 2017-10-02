@@ -8,4 +8,4 @@ install:
   - pip install -r src/requirements.txt
 
 script:
-  - ./test --one-time
+  - ./test
