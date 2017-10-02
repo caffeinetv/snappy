@@ -10,7 +10,7 @@ fi
 if [ "$1" == "" ]; then
   nose_args="--with-watch"
 else
-  nose_args=$1
+  nose_args=""
 fi
 
 cd src
