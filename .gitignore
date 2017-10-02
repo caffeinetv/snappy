@@ -112,7 +112,5 @@ src/vendored/*
 .idea
 
 #MacOS
-DS_Store
-
-#MacOS
 .DS_Store
+
