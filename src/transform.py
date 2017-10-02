@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import ntpath
+import jsonschema
 
 # Import our dependencies
 import vendored
@@ -10,7 +11,7 @@ import vendored
 import boto3
 
 from snappy import response
-from snappy.settings import DEFAULT_FIT_BG_COLOR
+from snappy.settings import TRANSFORMATIONS_SCHEMA, PARAM_ALIASES, LOSSY_IMAGE_FMTS
 from snappy.utils import rnd_str
 
 
@@ -33,7 +34,11 @@ except:
     pass
 
 
+class InvalidParamsError(Exception):
+    pass
+
 TMP_DIR = '/tmp'
+
 
 def download_s3_obj(bucket, key):
     pass
@@ -52,7 +57,6 @@ def image_transform(filename, operations):
         the filename of the transformed image
     """
     basename = ntpath.basename(filename)
-    # TODO: FIXME: only for debugging
     name, ext = basename.split('.')
     if 'w' in operations and 'h' in operations:
         resize = (operations['w'], operations['h'])
@@ -74,7 +78,6 @@ def image_transform(filename, operations):
             #  which is the same behaviour as `fit=clip`
             #
             args[-1] += '!'
-        
 
         if 'auto' in operations and operations['auto'] == 'compress':
             #
@@ -84,22 +87,79 @@ def image_transform(filename, operations):
             #
             args.append('-strip')
 
-        output = os.path.join(TMP_DIR, '{}_{}.{}'.format(name, rnd_str(5), ext))
+        output = os.path.join(
+            TMP_DIR, '{}_{}.{}'.format(name, rnd_str(5), ext))
         args.append(output)
-        print ('args: {}'.format(args))
+        print('args: {}'.format(args))
         im_result = subprocess.check_output(args)
-        print (im_result.decode())
+        print(im_result.decode())
+
+    if 'quality' in operations and ('format' in operations or ext.lower in ('jpg', 'jpeg')):
+        pass
+
     return output
+
+
+def normalize_params(params):
+
+    norm_params = {}
+    for k, v in params.items():
+        #
+        # convert all keys into lower case
+        #
+        key = k.lower()
+
+        #
+        # convert all str values into lower case
+        #
+        value = v
+        if type(v) == str:
+            value = v.lower()
+
+
+        #
+        # convert full named keys into aliases
+        #
+
+        if key in PARAM_ALIASES:
+            key = PARAM_ALIASES[key]
+
+        norm_params[key] = value
+
+    return norm_params
+
 
 def param_validation(params):
     """
-    Validate the params and raise an Exception in case invalid or not supported operations
+    Normalize and validate the params.
+    Raise an InvalidParamsError in case of invalid or not supported operations
     Returns
     -------
     dict
-        the validated params
+        the validated and normalized params
     """
-    pass
+    if any(params):
+
+        params = normalize_params(params)
+
+        try:
+            jsonschema.validate(params, TRANSFORMATIONS_SCHEMA)
+        except jsonschema.ValidationError as ve:
+            LOG.exception('Error validating schema for {}'.format(params))
+            raise InvalidParamsError(
+                'Error validating params. Details: {}'.format(ve))
+
+
+        if 'fit' in params and not ('w' in params or 'h' in params):
+            raise InvalidParamsError(
+                '`fit` is valid only for resize operations')
+
+        if 'q' in params and 'fm' in params and params['fm'] not in LOSSY_IMAGE_FMTS:
+            raise InvalidParamsError(
+                'Cannot set `quality` with non-lossy formats: {}'.format(params['fm']))
+
+    return params
+
 
 def make_response(image_data, s3_metadata):
     pass
