@@ -14,4 +14,4 @@ else
 fi
 
 cd src
-nosetests --rednose $nose_args
+nosetests tests/ --rednose $nose_args
