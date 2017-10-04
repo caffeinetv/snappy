@@ -10,8 +10,8 @@ fi
 if [ "$1" == "" ]; then
   nose_args="--with-watch"
 else
-  nose_args=""
+  nose_args=$1
 fi
 
 cd src
-nosetests --rednose $nose_args
+nosetests tests/ --rednose $nose_args

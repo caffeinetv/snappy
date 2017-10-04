@@ -107,3 +107,10 @@ src/vendored/*
 
 # Serverless
 .serverless
+
+# PyCharm
+.idea
+
+#MacOS
+.DS_Store
+
