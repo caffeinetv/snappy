@@ -5,6 +5,7 @@ import subprocess
 import ntpath
 import jsonschema
 from copy import copy
+import tempfile
 
 # Import our dependencies
 import vendored
@@ -38,8 +39,6 @@ except:
 class InvalidParamsError(Exception):
     pass
 
-TMP_DIR = '/tmp'
-
 
 def download_s3_obj(bucket, key):
     pass
@@ -69,8 +68,6 @@ def image_transform(filename, operations):
         new_size = '{}x{}'.format(*resize)
         args.extend(['-resize', new_size])
         if 'fit' in operations:
-            # TODO: REMOVEME: only for debugging
-            name += '_' + operations['fit']
             if operations['fit'] == 'clip':
                 #
                 # ignore the aspect ratio and distort the image so it always
@@ -133,8 +130,8 @@ def image_transform(filename, operations):
         dpr = str(operations['dpr'])
         # TODO: use `-density` or `-resample` ?
 
-    output = os.path.join(
-        TMP_DIR, '{}_{}.{}'.format(name, rnd_str(5), ext))
+    code, path = tempfile.mkstemp()
+    output = path + '.' + ext
     args.append(output)
     LOG.debug('args: {}'.format(args))
     im_result = subprocess.check_output(args)
