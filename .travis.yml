@@ -5,7 +5,6 @@ python:
 install:
   - pip install -r src/dev_requirements.txt
   - ./pip-install-requirements
-  # - pip install -r src/requirements.txt
 
 script:
   - ./test --verbose
