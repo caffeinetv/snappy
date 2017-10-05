@@ -3,13 +3,12 @@ import json
 import os
 import subprocess
 import ntpath
-import jsonschema
 from copy import copy
 import tempfile
 
 # Import our dependencies
 import vendored
-
+import jsonschema
 import boto3
 
 from snappy import response
