@@ -1,8 +1,9 @@
 import unittest
-from transform import image_transform, param_validation, InvalidParamsError
+from transform import image_transform, param_validation, InvalidParamsError, make_response
 import PIL.Image
 import os
 from copy import copy
+from tests.unit.snappy.s3_tests import S3MockerBase
 
 BASE_DIR = 'tests/data'
 
@@ -80,15 +81,18 @@ class ImageTranformTests(unittest.TestCase):
 class ParamValidationTests(unittest.TestCase):
 
     def test_valid(self):
-        ops = {'width': 10, 'height': 20, 'fit': 'crop',
+        ops = {'WIDTH': 10, 'height': 20, 'fit': 'bounds',
                'format': 'jpeg', 'quality': 75, 'auto': 'compress'}
-        self.assertIsNotNone(param_validation(ops))
-        ops = {'w': 10, 'h': 20, 'fit': 'crop',
+        params = param_validation(ops)
+        self.assertIn('w', params)
+        ops = {'w': 10, 'h': 20, 'fit': 'CROP',
                       'fm': 'jpeg', 'q': 75, 'auto': 'compress'}
-        self.assertIsNotNone(param_validation(ops))
-        ops = {'WIDTH': 10, 'height': 20, 'fit': 'CROP',
+        params = param_validation(ops)
+        self.assertIn('fit', params)
+        ops = {'w': 10, 'h': 20, 'f': 'clip', 'dpr': 2,
                       'fm': 'jpeg', 'q': 75, 'auto': 'compress'}
-        self.assertIsNotNone(param_validation(ops))
+        params = param_validation(ops)
+        self.assertEqual(ops, params)
 
     def test_dependencies(self):
         self.assertIsNotNone(param_validation({'w': 1}))
@@ -101,28 +105,38 @@ class ParamValidationTests(unittest.TestCase):
         #
         # `fit` is dependend of either `w` or `h`
         #
-        with self.assertRaises(InvalidParamsError) as exc:
-            param_validation({'fit': 'crop'})
+        params = param_validation({'fit': 'crop'})
+        self.assertEqual(params, {})
         
-        self.assertIn('fit', str(exc.exception))
-
 
     def test_invalid_schema(self):
-        ops = {'width': 'invalid', 'height': 20, 'fit': 'crop',
+        ops = {'width': 'invalid', 'h': 20, 'fit': 'crop',
                       'format': 'jpeg', 'quality': 75, 'auto': 'compress'}
-        with self.assertRaises(InvalidParamsError) as exc:
-            param_validation(ops)
 
-        self.assertIn('schema', str(exc.exception))
+        params =   param_validation(ops)
+        self.assertNotIn('w', params)
+        self.assertIn('h', params)
+        self.assertIn('q', params)
 
-        ops = {'width': 'invalid', 'height': 20, 'fit': 'invalid',
+        ops = {'h': 'invalid', 'w': 20, 'fit': 'invalid', 'dpr': 'invalid',
                       'format': 'jpeg', 'quality': 75, 'auto': 'compress'}
-        with self.assertRaises(InvalidParamsError):
-            param_validation(ops)
+        params = param_validation(ops)
+        self.assertNotIn('h', params)
+        self.assertNotIn('dpr', params)
+        self.assertNotIn('fit', params)
+        self.assertIn('w', params)
+        self.assertIn('fm', params)
+        self.assertIn('auto', params)
 
     def test_invalid_quality_fmt(self):
-        ops = {'fm': 'gif', 'quality': 75}
-        with self.assertRaises(InvalidParamsError) as exc:
-            param_validation(ops)
+        ops = {'fm': 'gif', 'q': 75}
+        params = param_validation(ops)
+        self.assertNotIn('q', params)
+        self.assertIn('fm', params)
+
+class HTTPTests(S3MockerBase):
+    def test_make_response(self):
+        test_cc = 'max-age=3600'
+        bucket, key, body = self.put_s3(**{'CacheControl': test_cc})
         
-        self.assertIn('lossy', str(exc.exception))
+
