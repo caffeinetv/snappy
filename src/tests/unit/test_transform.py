@@ -142,8 +142,6 @@ class ImageTranformTests(unittest.TestCase):
 
 
 
-
-
 class ParamValidationTests(unittest.TestCase):
 
     def test_valid(self):

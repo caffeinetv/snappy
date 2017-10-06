@@ -50,6 +50,11 @@ def get_obj_metadata(bucket, key):
 def is_lossy(ext, ops):
     return ('fm' in ops and ops['fm'] in LOSSY_IMAGE_FMTS) or ext in LOSSY_IMAGE_FMTS
 
+def size_with_dpr(size, ops):
+    if 'dpr' in ops:
+        size = (s*float(ops['dpr']) for s in size)
+    return size
+
 def image_transform(filename, ops):
     """
     Transform the image specified by `filename` using the transformations specified by `ops` (operations)
@@ -68,6 +73,7 @@ def image_transform(filename, ops):
 
     if 'w' in ops and 'h' in ops:
         resize = (ops['w'], ops['h'])
+        resize = size_with_dpr(resize, ops)
         new_size = '{}x{}'.format(*resize)
         args.extend(['-resize', new_size])
         if 'fit' in ops:
@@ -105,18 +111,19 @@ def image_transform(filename, ops):
     # `fit` does not apply when only one side is given.
     #
     elif 'w' in ops:
-        new_size = '{}x'.format(ops['w'])
+        resize = size_with_dpr((ops['w'],), ops)
+        new_size = '{}x'.format(*resize)
         args.extend(['-resize', new_size])
     elif 'h' in ops:
-        new_size = 'x{}'.format(ops['h'])
+        resize = size_with_dpr((ops['h'],), ops)
+        new_size = 'x{}'.format(*resize)
         args.extend(['-resize', new_size])
 
     
     #
-    # `dpr` must be placed here, just after the resizing ops.,
-    #  so that IM will apply the scaling in the right order
+    # if `dpr` is provided with no resize, then we just scale the image 
     #
-    if 'dpr' in ops:
+    elif 'dpr' in ops:
         scale_factor = '{}%'.format(float(ops['dpr'])*100)
         args.extend(['-scale', scale_factor])        
 
