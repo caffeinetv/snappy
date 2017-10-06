@@ -219,12 +219,11 @@ def make_response(output_img, s3_source_key):
     dict
         the full response dict as expected by APIGateway/Lambda Proxy
     """
-    status_code:
-        200
+    status_code = 200
     kwargs = {'isBase64Encoded': True}
     s3_obj = get_s3_obj(BUCKET, s3_source_key)
     mime = magic.Magic(mime=True)
-    headers = {'Content-Type': mime(output_img)}
+    headers = {'Content-Type': mime.from_file(output_img)}
     if s3_obj.cache_control:
         headers.update({'Cache-Control': s3_obj.cache_control})
     with open(output_img, 'rb') as fp:

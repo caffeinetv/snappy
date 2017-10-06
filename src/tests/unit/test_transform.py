@@ -4,6 +4,7 @@ import PIL.Image
 import os
 from copy import copy
 from tests.unit.snappy.s3_tests import S3MockerBase
+from snappy.settings import BUCKET
 
 BASE_DIR = 'tests/data'
 
@@ -135,8 +136,24 @@ class ParamValidationTests(unittest.TestCase):
         self.assertIn('fm', params)
 
 class HTTPTests(S3MockerBase):
+
+    def get_main_bucket(self):
+        return BUCKET
+
     def test_make_response(self):
         test_cc = 'max-age=3600'
         bucket, key, body = self.put_s3(**{'CacheControl': test_cc})
-        
+        filename = os.path.join(BASE_DIR, 'lincoln.jpg')
+        resp = make_response(filename, key)
+        self.assertEqual(test_cc, resp['headers']['Cache-Control'])
+        self.assertEqual(True, resp['isBase64Encoded'])
+        self.assertTrue(type(resp['body']) == str)
+        self.assertEqual('image/jpeg', resp['headers']['Content-Type'])
+
+        bucket, key, body = self.put_s3()
+        filename = os.path.join(BASE_DIR, 'terminal.gif')
+        resp = make_response(filename, key)
+        self.assertNotIn('Cache-Control', resp['headers'])
+        self.assertEqual('image/gif', resp['headers']['Content-Type'])
+
 

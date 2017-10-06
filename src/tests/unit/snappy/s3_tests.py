@@ -4,11 +4,15 @@ from snappy.s3 import get_aws_resource, download_s3_obj, get_s3_obj
 from snappy.utils import rnd_str
 
 class S3MockerBase(unittest.TestCase):
+
+    def get_main_bucket(self):
+        return 'main_bucket'
+
     def setUp(self):
         self.s3_mock = mock_s3()
         self.s3_mock.start()
         self.s3_resource = get_aws_resource('s3')
-        self.main_bucket = 'main_bucket'
+        self.main_bucket = self.get_main_bucket()
         self.s3_resource.create_bucket(Bucket=self.main_bucket)
         super(S3MockerBase, self).setUp()
 

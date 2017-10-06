@@ -16,10 +16,10 @@ def generic(status_code, body, headers=None, **kwargs):
     }
 
     if headers:
-        base_resp.update(headers)
+        base_resp['headers'].update(headers)
 
     base_resp.update(kwargs)
-    
+
     return base_resp
 
 
