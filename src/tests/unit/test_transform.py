@@ -34,23 +34,23 @@ class ImageTranformTests(unittest.TestCase):
         base_ops = {'w': 50, 'h': 100}
 
         operations = copy(base_ops)
-        operations.update({'fit': 'clip'})
-        output = image_transform(filename, operations)
-        img = PIL.Image.open(output)
-        self.assertEqual((operations['w'], operations['h']), img.size)
-
-        operations = copy(base_ops)
         operations.update({'fit': 'crop'})
         output = image_transform(filename, operations)
         img = PIL.Image.open(output)
         self.assertEqual((operations['w'], operations['h']), img.size)
 
         #
-        # bounds will fit only one the dimensions
-        # in case the aspect ratio is different
+        # `clip` == `bounds` which will fit only one the
+        #  dimensions in case the aspect ratio is different
         #
         operations = copy(base_ops)
         operations.update({'fit': 'bounds'})
+        output = image_transform(filename, operations)
+        img = PIL.Image.open(output)
+        self.assertEqual((operations['w'], 40), img.size)
+
+        operations = copy(base_ops)
+        operations.update({'fit': 'clip'})
         output = image_transform(filename, operations)
         img = PIL.Image.open(output)
         self.assertEqual((operations['w'], 40), img.size)

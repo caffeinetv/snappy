@@ -73,10 +73,11 @@ def image_transform(filename, ops):
         if 'fit' in ops:
             if ops['fit'] == 'clip':
                 #
-                # ignore the aspect ratio and distort the image so it always
-                # generates an image exactly the size specified
+                # same behavior as `bounds` for compatibility, may be removed later
+                # https://github.com/caffeinetv/snappy/issues/5
+                # 
                 #
-                args[-1] += '!'
+                pass
             elif ops['fit'] == 'crop':
                 #
                 # `^` is used to resize the image based on the smallest fitting dimension
@@ -92,12 +93,11 @@ def image_transform(filename, ops):
                 pass
         else:
             #
-            #  default behaviour is to force scaling to the specificed bounds
-            #  which is the same behaviour as `fit=clip`
+            # ignore the aspect ratio and distort the image so it always
+            # generates an image exactly the size specified
             #
-            new_ops = copy(ops)
-            new_ops.update({'fit': 'clip'})
-            return image_transform(filename, new_ops)
+            args[-1] += '!'
+
 
     #
     # if only `w` or `h` is provided, then we scale the target side
