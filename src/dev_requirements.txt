@@ -2,3 +2,4 @@ nose==1.3.7
 rednose==1.2.2
 nose-watch==0.9.1
 Pillow==4.2.1
+moto==1.1.1

@@ -1,3 +1,16 @@
+import os
+
+try:
+    # Environment variable config
+    SERVERLESS_ENV = os.environ['SERVERLESS_ENV']
+    BUCKET = os.environ['BUCKET']
+    AWS_REGION = os.environ['AWS_REGION']
+except KeyError:
+    SERVERLESS_ENV = 'dev'
+    AWS_REGION = 'us-west-2'
+    BUCKET = 'testing'
+
+
 PARAM_ALIASES = {
     'width': 'w',
     'height': 'h',
