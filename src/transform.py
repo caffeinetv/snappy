@@ -26,24 +26,7 @@ logging.getLogger('botocore').setLevel(logging.INFO)
 logging.getLogger('boto3').setLevel(logging.INFO)
 
 
-# TODO: remove try/except after setting local envs.
-try:
-    # Environment variable config
-    SERVERLESS_ENV = os.environ['SERVERLESS_ENV']
-    BUCKET = os.environ['BUCKET']
-except:
-    pass
-
-
 class InvalidParamsError(Exception):
-    pass
-
-
-def download_s3_obj(bucket, key):
-    pass
-
-
-def get_obj_metadata(bucket, key):
     pass
 
 
