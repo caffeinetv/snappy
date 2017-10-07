@@ -118,3 +118,18 @@ class ResponseTests(unittest.TestCase):
         self.assertEquals(
             res["body"],
             """{"errors": {"_internal": "Internal server error"}}""")
+
+    def test_method_not_allowed(self):
+        res = response.method_not_allowed()
+        self.assertEquals(res["statusCode"], 405)
+        self.assertEquals(res["headers"]["Access-Control-Allow-Origin"], "*")
+        self.assertEquals(
+            res["headers"]["Access-Control-Allow-Headers"],
+            (
+                "Content-Type,Authorization,Accept,X-Amz-Date,X-Api-Key,"
+                "X-Amz-Security-Token,x-client-type,x-client-version"
+            )
+        )
+        self.assertEquals(
+            res["body"],
+            """{"errors": {"_internal": "Method Not Allowed"}}""")

@@ -27,16 +27,21 @@ class S3MockerBase(unittest.TestCase):
             key = rnd_str(5)
         if not body:
             body = rnd_str(5)
+        
+        if type(body) == str:
+            body.encode()
 
-        self.s3_resource.Bucket(bucket).put_object(Key=key, Body=body.encode(), **kwargs)
+        self.s3_resource.Bucket(bucket).put_object(Key=key, Body=body, **kwargs)
         return bucket, key, body
         
 class S3Tests(S3MockerBase):
     def test_download_file(self):
-        bucket, key, body = self.put_s3()
+        ext = '.jpg'
+        bucket, key, body = self.put_s3(key='test' + ext)
         filename = download_s3_obj(bucket, key)
         with open(filename) as fp:
             self.assertEqual(fp.read(), body)
+        self.assertIn(ext, filename)
 
     def test_file_not_found(self):
         bucket, key, body = self.put_s3()

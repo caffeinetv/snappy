@@ -71,3 +71,11 @@ def internal_server_error(message='Internal server error'):
         '_internal': message
     }
     return error(500, errors)
+
+
+def method_not_allowed(message='Method Not Allowed'):
+    """405 Method Not Allowed error response"""
+    errors = {
+        '_internal': message
+    }
+    return error(405, errors)

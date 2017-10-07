@@ -15,7 +15,7 @@ import magic
 from snappy import response
 from snappy.settings import TRANSFORMATIONS_SCHEMA, PARAM_ALIASES, LOSSY_IMAGE_FMTS, BUCKET
 from snappy.utils import rnd_str, base64_encode
-from snappy.s3 import get_s3_obj
+from snappy.s3 import get_s3_obj, download_s3_obj
 
 
 # Set up the default logger
@@ -237,33 +237,38 @@ def http_transform(s3_key, query_params):
 
 
 def parse_event(event):
-    s3_keys = event['pathParameters']['proxy']
+    s3_key = event['pathParameters']['proxy']
     raw_ops = event['queryStringParameters']
     return s3_key, raw_ops
 
 
 def handler(event, context):
+
     LOG.debug(json.dumps(event, indent=2))
     LOG.debug("Using %s bucket", BUCKET)
 
-    # Do HTTP handling
-    method = event['httpMethod']
-    if method == 'GET':
-        s3_key, raw_ops = parse_event(event)
-        if source_filename:
-            ops = param_validation(raw_ops)
-            if any(ops):
-                output_img = image_transform(source_filename, ops)
+    try:
+        # Do HTTP handling
+        method = event['httpMethod']
+        if method == 'GET':
+            s3_key, raw_ops = parse_event(event)
+            source_filename = download_s3_obj(BUCKET, s3_key)
+            if source_filename:
+                ops = param_validation(raw_ops)
+                if any(ops):
+                    output_img = image_transform(source_filename, ops)
+                else:
+                    output_img = source_filename
                 return make_response(output_img, s3_key)
             else:
-                output_img = source_filename
+                return response.not_found()
         else:
+            # FIXME: this should be Method Not Allowed
             return response.not_found()
-        return response.ok("OK")
+    except Exception:
+        LOG.exception("Unexpected error while processing request")
+        return response.internal_server_error()
 
-    else:
-        # FIXME: this should be Method Not Allowed
-        return response.not_found()
 
 
 LOG.info('Loaded successfully')
