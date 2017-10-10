@@ -179,7 +179,7 @@ class HTTPTests(S3MockerBase):
         filename = os.path.join(BASE_DIR, 'terminal.gif')
         with open(filename, 'rb') as fp:
             bucket, s3_key, body = self.put_s3(body=fp.read())
-        raw_ops = {'w': 100, 'h': 100}  
+        raw_ops = {'w': 100, 'h': 100}
         event = self.make_event(s3_key, raw_ops)
         resp = handler(event, None)
         self.assertEqual(resp['statusCode'], 200)
@@ -191,7 +191,7 @@ class HTTPTests(S3MockerBase):
         self.assertEqual((raw_ops['w'], raw_ops['h']), img.size)
 
 
-    def test_not_ops(self):
+    def test_no_ops(self):
         pass
 
     def test_not_found(self):
