@@ -12,7 +12,7 @@ import jsonschema
 import boto3
 
 from snappy import response
-from snappy.settings import TRANSFORMATIONS_SCHEMA, PARAM_ALIASES, LOSSY_IMAGE_FMTS
+from snappy.settings import TRANSFORMATIONS_SCHEMA, PARAM_ALIASES, LOSSY_IMAGE_FMTS, DEFAULT_QUALITY_RATE, AGRESSIVE_QUALITY_RATE
 from snappy.utils import rnd_str
 
 
@@ -29,41 +29,51 @@ logging.getLogger('boto3').setLevel(logging.INFO)
 class InvalidParamsError(Exception):
     pass
 
+def is_lossy(ext, ops):
+    return ('fm' in ops and ops['fm'] in LOSSY_IMAGE_FMTS) or ext in LOSSY_IMAGE_FMTS
 
-def image_transform(filename, operations):
+def size_with_dpr(size, ops):
+    if 'dpr' in ops:
+        size = (s*float(ops['dpr']) for s in size)
+    return size
+
+def image_transform(filename, ops):
     """
-    Transform the image specified by `filename` using the transformations specified by `operations`
+    Transform the image specified by `filename` using the transformations specified by `ops` (operations)
     Returns
     -------
     str
         the filename of the transformed image
     """
     
+
     args = ['convert', filename]
 
     basename = ntpath.basename(filename)
     name, ext = os.path.splitext(basename)
     ext = ext.strip('.')
 
-    if 'w' in operations and 'h' in operations:
-        resize = (operations['w'], operations['h'])
+    if 'w' in ops and 'h' in ops:
+        resize = (ops['w'], ops['h'])
+        resize = size_with_dpr(resize, ops)
         new_size = '{}x{}'.format(*resize)
         args.extend(['-resize', new_size])
-        if 'fit' in operations:
-            if operations['fit'] == 'clip':
+        if 'fit' in ops:
+            if ops['fit'] == 'clip':
                 #
-                # ignore the aspect ratio and distort the image so it always
-                # generates an image exactly the size specified
+                # same behavior as `bounds` for compatibility, may be removed later
+                # https://github.com/caffeinetv/snappy/issues/5
+                # 
                 #
-                args[-1] += '!'
-            elif operations['fit'] == 'crop':
+                pass
+            elif ops['fit'] == 'crop':
                 #
                 # `^` is used to resize the image based on the smallest fitting dimension
                 # then `-extents` crops exactly the image to the size specified from the center
                 #
                 args[-1] += '^'
                 args.extend(['-gravity', 'center', '-extent', new_size])
-            elif operations['fit'] == 'bounds':
+            elif ops['fit'] == 'bounds':
                 #
                 # by default `-resize` will fit the image into the requested size
                 # and keep the original aspect ratio
@@ -71,46 +81,64 @@ def image_transform(filename, operations):
                 pass
         else:
             #
-            #  default behaviour is to force scaling to the specificed bounds
-            #  which is the same behaviour as `fit=clip`
+            # ignore the aspect ratio and distort the image so it always
+            # generates an image exactly the size specified
             #
-            new_ops = copy(operations)
-            new_ops.update({'fit': 'clip'})
-            return image_transform(filename, new_ops)
+            args[-1] += '!'
+
 
     #
-    # if only `w` or `h` is provided, then we scale target side
+    # if only `w` or `h` is provided, then we scale the target side
     # to the specified value, and keep the aspect ratio.
     # `fit` does not apply when only one side is given.
     #
-    elif 'w' in operations:
-        new_size = '{}x'.format(operations['w'])
+    elif 'w' in ops:
+        resize = size_with_dpr((ops['w'],), ops)
+        new_size = '{}x'.format(*resize)
         args.extend(['-resize', new_size])
-    elif 'h' in operations:
-        new_size = 'x{}'.format(operations['h'])
+    elif 'h' in ops:
+        resize = size_with_dpr((ops['h'],), ops)
+        new_size = 'x{}'.format(*resize)
         args.extend(['-resize', new_size])
 
-    if 'auto' in operations and operations['auto'] == 'compress':
+    
+    #
+    # if `dpr` is provided with no resize, then we just scale the image 
+    #
+    elif 'dpr' in ops:
+        scale_factor = '{}%'.format(float(ops['dpr'])*100)
+        args.extend(['-scale', scale_factor])        
+
+    if 'fm' in ops:
+        #
+        # just use the format as filename extension,
+        # then IM will handle conversion automatically
+        #
+        ext = ops['fm']
+
+
+    if 'auto' in ops and ops['auto'] == 'compress':
         #
         # removes any image profile attached to the image
         #
         args.append('-strip')
 
-    if 'fm' in operations:
         #
-        # just use the format as filename extension,
-        # then IM will handle conversion automatically
+        # this will overide any existing `q` operation
         #
-        ext = operations['fm']
+        if is_lossy(ext, ops) and 'q' not in ops:
+            new_ops = copy(ops)
+            new_ops.update({'q': AGRESSIVE_QUALITY_RATE})
+            return image_transform(filename, new_ops)
 
-    if 'q' in operations:
-        q = str(operations['q'])
-        if ext in LOSSY_IMAGE_FMTS or 'fm' in operations:
+
+    if is_lossy(ext, ops):
+        if 'q' in ops:
+            q = str(ops['q'])
             args.extend(['-quality', q])
-
-    if 'dpr' in operations:
-        dpr = str(operations['dpr'])
-        # TODO: use `-density` or `-resample` ?
+        else:
+            args.extend(['-quality', str(DEFAULT_QUALITY_RATE)])
+    
 
     code, path = tempfile.mkstemp()
     output = path + '.' + ext
