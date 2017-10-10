@@ -256,7 +256,20 @@ class HTTPTests(S3MockerBase):
 
 
     def test_no_ops(self):
-        pass
+        filename = os.path.join(BASE_DIR, 'terminal.gif') 
+        with open(filename, 'rb') as fp:
+            bucket, s3_key, body = self.put_s3(body=fp.read())
+        raw_ops = {}
+        event = self.make_event(s3_key, raw_ops)
+        img = PIL.Image.open(filename)
+        original_size = img.size
+        resp = handler(event, None)
+        img_data = base64_decode(resp['body'])
+        code, tmp_file = tempfile.mkstemp()
+        with open(tmp_file, 'wb') as fp:
+            fp.write(img_data)
+        img = PIL.Image.open(tmp_file)
+        self.assertEqual((original_size), img.size)
 
     def test_not_found(self):
         pass

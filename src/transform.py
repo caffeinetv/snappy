@@ -189,6 +189,7 @@ def param_validation(params):
     dict
         the validated and normalized params
     """
+    norm_params = {}
     if any(params):
 
         norm_params = normalize_params(params)
