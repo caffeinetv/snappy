@@ -18,7 +18,12 @@ PARAM_ALIASES = {
     'format': 'fm',
 }
 
-LOSSY_IMAGE_FMTS = ('jpg, jpeg')
+LOSSY_IMAGE_FMTS = ('jpg', 'jpeg', 'webp')
+
+DEFAULT_QUALITY_RATE = 85
+AGRESSIVE_QUALITY_RATE = 45
+
+SUPPORTED_FORMATS = ['jpeg', 'jpg', 'png', 'gif', 'webp']
 
 MAX_IMAGE_W = 2000
 MAX_IMAGE_H = MAX_IMAGE_W
@@ -42,7 +47,7 @@ TRANSFORMATIONS_SCHEMA = {
             'enum': ['clip', 'crop', 'bounds']
         },
         'fm': {
-            'enum': ['jpeg', 'jpg', 'png', 'gif', 'webp']
+            'enum': SUPPORTED_FORMATS
         },
         'q': {
             'type': 'integer',

@@ -1,13 +1,14 @@
 import unittest
 import json
-from transform import image_transform, param_validation, InvalidParamsError, make_response, parse_event, handler
-import PIL.Image
 import os
 from copy import copy
 import tempfile
+import PIL.Image
 from tests.unit.snappy.s3_tests import S3MockerBase
-from snappy.settings import BUCKET
+from snappy.settings import BUCKET, DEFAULT_QUALITY_RATE, AGRESSIVE_QUALITY_RATE, SUPPORTED_FORMATS
 from snappy.utils import base64_decode
+from transform import image_transform, param_validation, InvalidParamsError, make_response, parse_event, handler
+
 
 BASE_DIR = 'tests/data'
 
@@ -21,15 +22,20 @@ class ImageTranformTests(unittest.TestCase):
         img = PIL.Image.open(output)
         self.assertEqual((operations['w'], operations['h']), img.size)
 
+        operations = {'w': 25}
+        output = image_transform(filename, operations)
+        img = PIL.Image.open(output)
+        self.assertEqual(operations['w'], img.size[0])
+
+        operations = {'h': 25}
+        output = image_transform(filename, operations)
+        img = PIL.Image.open(output)
+        self.assertEqual(operations['h'], img.size[1])
+
+
     def test_resize_with_fit(self):
         filename = os.path.join(BASE_DIR, 'terminal.gif')  # 35x28
         base_ops = {'w': 50, 'h': 100}
-
-        operations = copy(base_ops)
-        operations.update({'fit': 'clip'})
-        output = image_transform(filename, operations)
-        img = PIL.Image.open(output)
-        self.assertEqual((operations['w'], operations['h']), img.size)
 
         operations = copy(base_ops)
         operations.update({'fit': 'crop'})
@@ -38,8 +44,8 @@ class ImageTranformTests(unittest.TestCase):
         self.assertEqual((operations['w'], operations['h']), img.size)
 
         #
-        # bounds will fit only one the dimensions
-        # in case the aspect ratio is different
+        # `clip` == `bounds` which will fit only one the
+        #  dimensions in case the aspect ratio is different
         #
         operations = copy(base_ops)
         operations.update({'fit': 'bounds'})
@@ -47,19 +53,35 @@ class ImageTranformTests(unittest.TestCase):
         img = PIL.Image.open(output)
         self.assertEqual((operations['w'], 40), img.size)
 
-    def test_compress(self):
+        operations = copy(base_ops)
+        operations.update({'fit': 'clip'})
+        output = image_transform(filename, operations)
+        img = PIL.Image.open(output)
+        self.assertEqual((operations['w'], 40), img.size)
+
+    def test_auto_compress(self):
         filename = os.path.join(BASE_DIR, 'lincoln.jpg')
         w, h = PIL.Image.open(filename).size
         in_file_size = os.stat(filename).st_size
-        operations = {'w': w, 'h': h, 'auto': 'compress'}
+
+        w, h = PIL.Image.open(filename).size
+        operations = {'q': AGRESSIVE_QUALITY_RATE}
         output = image_transform(filename, operations)
+        size_with_metadata = os.stat(output).st_size
         self.assertLess(os.stat(output).st_size, in_file_size)
+
+        # applies agressive quality and remove metadata
         operations = {'auto': 'compress'}
         output = image_transform(filename, operations)
         self.assertLess(os.stat(output).st_size, in_file_size)
+        size_with_no_metadata = os.stat(output).st_size
+        self.assertLess(size_with_no_metadata, size_with_metadata)
+
 
     def test_format(self):
+        
         filename = os.path.join(BASE_DIR, 'lincoln.jpg')
+        
         in_file_size = os.stat(filename).st_size
         operations = {'fm': 'png'}
         output = image_transform(filename, operations)
@@ -72,13 +94,55 @@ class ImageTranformTests(unittest.TestCase):
         output = image_transform(filename, operations)
         self.assertIn('jpeg', output)
         self.assertGreater(os.stat(output).st_size, in_file_size)
+        
+        for fm in SUPPORTED_FORMATS:
+            #FIXME: https://github.com/caffeinetv/snappy/issues/10
+            if fm != 'webp':
+                operations = {'fm': fm}
+                output = image_transform(filename, operations)
+                self.assertIn(fm, output)
+
 
     def test_quality(self):
         filename = os.path.join(BASE_DIR, 'lincoln.jpg')
-        in_file_size = os.stat(filename).st_size
-        operations = {'q': 50}
+        w, h = PIL.Image.open(filename).size
+        #
+        # applying no transformation with the default quality
+        #
+        operations = {'w': w, 'h': h}
         output = image_transform(filename, operations)
-        self.assertLess(os.stat(output).st_size, in_file_size)
+        out_file_size = os.stat(output).st_size
+        
+        operations = {'q': DEFAULT_QUALITY_RATE - 5}
+        output = image_transform(filename, operations)
+        self.assertLess(os.stat(output).st_size, out_file_size)
+
+
+    def test_dpr(self):
+        filename = os.path.join(BASE_DIR, 'lincoln.jpg')
+        w, h = PIL.Image.open(filename).size
+        dpr = 2
+        operations = {'dpr': dpr}
+        output = image_transform(filename, operations)
+        ow, oh = PIL.Image.open(output).size
+        self.assertEqual((w*dpr, h*dpr), (ow, oh))
+        
+        scale = 2
+        w, h = w*scale, h*scale
+        operations = {'dpr': dpr, 'w': w, 'h': h}
+        output = image_transform(filename, operations)
+        ow, oh = PIL.Image.open(output).size
+        self.assertEqual((w*dpr, h*dpr), (ow, oh))
+
+
+    def test_all_ops(self):
+        filename = os.path.join(BASE_DIR, 'lincoln.jpg')
+        side = 100
+        dpr = 2
+        operations = {'w': side,'h': side, 'fit': 'crop', 'fm': 'gif', 'dpr': dpr, 'q': 50, 'auto': 'compress'}
+        output = image_transform(filename, operations)
+        ow, oh = PIL.Image.open(output).size
+        self.assertEqual((side*dpr, side*dpr), (ow, oh))
 
 
 
