@@ -249,7 +249,7 @@ class HTTPTests(S3MockerBase):
         with open(filename, 'rb') as fp:
             bucket, s3_key, body = self.put_s3(body=fp.read())
         raw_ops = {'w': 100, 'h': 100}
-        event = self.make_event(s3_key, raw_ops)
+        event = self.make_event('/' + s3_key, raw_ops)
         resp = handler(event, None)
         self.assertEqual(resp['statusCode'], 200)
         img_data = base64_decode(resp['body'])
