@@ -270,11 +270,8 @@ class HTTPTests(S3MockerBase):
         original_size = img.size
         resp = handler(event, None)
         img_data = base64_decode(resp['body'])
-        code, tmp_file = tempfile.mkstemp()
-        with open(tmp_file, 'wb') as fp:
-            fp.write(img_data)
-        img = PIL.Image.open(tmp_file)
-        self.assertEqual(original_size, img.size)
+        self.assertEqual(body, img_data)
+
 
     def test_not_found(self):
         raw_ops = {'w': 100, 'h': 100}
