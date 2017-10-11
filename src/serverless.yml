@@ -7,23 +7,25 @@ custom:
   # Mappings from environment name to variables
   production:
     gatewayName: v1
+    aws_region: us-west-2
     name:
       human: Production
       lower: production
       short: prod
-    bucket: my-bucket
+    bucket: snappy-production-bucket
   devtest:
     gatewayName: devtest
+    aws_region: us-west-2
     name:
       human: DevTest
       lower: devtest
       short: dev
-    bucket: my-production-bucket
+    bucket: snappy-testing-bucket
 
 
 provider:
   name: aws
-  region: us-west-2
+  region: ${self:custom.${env:SERVERLESS_ENV}.aws_region}
   runtime: python3.6
   stage: ${self:custom.${env:SERVERLESS_ENV}.gatewayName}
   memorySize: 1024
@@ -81,41 +83,3 @@ functions:
               - x-client-version
     environment:
       <<: *environment_defaults
-
-  logatron:
-    name: ${self:custom.${env:SERVERLESS_ENV}.name.lower}-snappy-logatron
-    handler: logatron.handler
-    timeout: 30
-    description: ${self:custom.${env:SERVERLESS_ENV}.name.human} Snappy self-log watcher and processor.
-    environment:
-      SERVERLESS_ENV: ${env:SERVERLESS_ENV}
-      SLACK_WEBHOOK_URL: https://hooks.slack.com/services/TODO
-
-
-# AWS Resources managed by Serverless
-resources:
-  Resources:
-    LogatronPermission:
-      Type: "AWS::Lambda::Permission"
-      Properties:
-        FunctionName:
-          Ref: LogatronLambdaFunction
-        Principal: "logs.us-west-2.amazonaws.com"
-        Action: "lambda:InvokeFunction"
-        SourceAccount:
-          Ref: AWS::AccountId
-        SourceArn: "arn:aws:logs:us-west-2:782097635144:log-group:/aws/lambda/${self:custom.${env:SERVERLESS_ENV}.name.lower}-snappy-*"
-
-    # Set up a log processor for each lambda function except logatron as that
-    # would be an infinite loop.
-    LogSubscriptionTransform:
-      Type: "AWS::Logs::SubscriptionFilter"
-      DependsOn: LogatronPermission
-      Properties:
-        LogGroupName:
-          Ref: TransformLogGroup
-        FilterPattern: ""
-        DestinationArn:
-          Fn::GetAtt:
-            - "LogatronLambdaFunction"
-            - "Arn"
