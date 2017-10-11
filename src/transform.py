@@ -31,13 +31,16 @@ logging.getLogger('boto3').setLevel(logging.INFO)
 class InvalidParamsError(Exception):
     pass
 
+
 def is_lossy(ext, ops):
     return ('fm' in ops and ops['fm'] in LOSSY_IMAGE_FMTS) or ext in LOSSY_IMAGE_FMTS
 
+
 def size_with_dpr(size, ops):
     if 'dpr' in ops:
-        size = (s*float(ops['dpr']) for s in size)
+        size = (s * float(ops['dpr']) for s in size)
     return size
+
 
 def image_transform(filename, ops):
     """
@@ -64,7 +67,7 @@ def image_transform(filename, ops):
                 #
                 # same behavior as `bounds` for compatibility, may be removed later
                 # https://github.com/caffeinetv/snappy/issues/5
-                # 
+                #
                 #
                 pass
             elif ops['fit'] == 'crop':
@@ -87,7 +90,6 @@ def image_transform(filename, ops):
             #
             args[-1] += '!'
 
-
     #
     # if only `w` or `h` is provided, then we scale the target side
     # to the specified value, and keep the aspect ratio.
@@ -102,13 +104,12 @@ def image_transform(filename, ops):
         new_size = 'x{}'.format(*resize)
         args.extend(['-resize', new_size])
 
-    
     #
-    # if `dpr` is provided with no resize, then we just scale the image 
+    # if `dpr` is provided with no resize, then we just scale the image
     #
     elif 'dpr' in ops:
-        scale_factor = '{}%'.format(float(ops['dpr'])*100)
-        args.extend(['-scale', scale_factor])        
+        scale_factor = '{}%'.format(float(ops['dpr']) * 100)
+        args.extend(['-scale', scale_factor])
 
     if 'fm' in ops:
         #
@@ -116,7 +117,6 @@ def image_transform(filename, ops):
         # then IM will handle conversion automatically
         #
         ext = ops['fm']
-
 
     if 'auto' in ops and ops['auto'] == 'compress':
         #
@@ -132,14 +132,12 @@ def image_transform(filename, ops):
             new_ops.update({'q': AGRESSIVE_QUALITY_RATE})
             return image_transform(filename, new_ops)
 
-
     if is_lossy(ext, ops):
         if 'q' in ops:
             q = str(ops['q'])
             args.extend(['-quality', q])
         else:
             args.extend(['-quality', str(DEFAULT_QUALITY_RATE)])
-    
 
     code, path = tempfile.mkstemp()
     output = path + '.' + ext
@@ -258,10 +256,6 @@ def make_response(output_img, s3_source_key):
         bs64_str = base64_encode(fp.read())
 
     return response.generic(status_code=status_code, body=bs64_str, headers=headers, **kwargs)
-
-
-def http_transform(s3_key, query_params):
-    pass
 
 
 def parse_event(event):
