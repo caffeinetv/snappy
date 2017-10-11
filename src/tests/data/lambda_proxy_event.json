@@ -1,6 +1,6 @@
 {
     "resource": "/{proxy+}",
-    "path": "test/path/file.png",
+    "path": "/test/path/file.png",
     "httpMethod": "GET",
     "headers": null,
     "queryStringParameters": {

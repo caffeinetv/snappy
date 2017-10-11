@@ -69,7 +69,7 @@ functions:
     events:
       - http:
           method: get
-          path: /
+          path: /{proxy+}
           cors:
             origins:
               - '*'
