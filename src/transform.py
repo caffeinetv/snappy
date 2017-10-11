@@ -260,8 +260,6 @@ def make_response(output_img, s3_source_key):
 
 def parse_event(event):
     s3_key = event['pathParameters']['proxy']
-    if s3_key.startswith('/'):
-        s3_key = s3_key[1:]
     raw_ops = event['queryStringParameters']
     return s3_key, raw_ops
 
