@@ -292,11 +292,10 @@ def handler(event, context):
                 return response.not_found()
         else:
             # FIXME: this should be Method Not Allowed
-            return response.not_found()
+            return response.method_not_allowed()
     except Exception:
         LOG.exception("Unexpected error while processing request")
         return response.internal_server_error()
-
 
 
 LOG.info('Loaded successfully')

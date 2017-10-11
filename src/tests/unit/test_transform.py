@@ -9,7 +9,6 @@ from snappy.settings import BUCKET, DEFAULT_QUALITY_RATE, AGRESSIVE_QUALITY_RATE
 from snappy.utils import base64_decode
 from transform import image_transform, param_validation, InvalidParamsError, make_response, parse_event, handler
 
-
 BASE_DIR = 'tests/data'
 
 
@@ -203,6 +202,12 @@ class ParamValidationTests(unittest.TestCase):
         self.assertNotIn('q', params)
         self.assertIn('fm', params)
 
+    def test_unknown_params(self):
+        ops = {'invalid': 'value', 'q': 75}
+        params = param_validation(ops)
+        self.assertEqual(ops, params)
+
+
 class HTTPTests(S3MockerBase):
 
     def get_main_bucket(self):
@@ -269,13 +274,28 @@ class HTTPTests(S3MockerBase):
         with open(tmp_file, 'wb') as fp:
             fp.write(img_data)
         img = PIL.Image.open(tmp_file)
-        self.assertEqual((original_size), img.size)
+        self.assertEqual(original_size, img.size)
 
     def test_not_found(self):
-        pass
+        raw_ops = {'w': 100, 'h': 100}
+        event = self.make_event('wont_find', raw_ops)
+        resp = handler(event, None)
+        self.assertEqual(resp['statusCode'], 404)
+
 
     def test_method_not_allowed(self):
-        pass
+        event = self.make_event('wont_find', {})
+        event['httpMethod'] = 'POST'
+        resp = handler(event, None)
+        self.assertEqual(resp['statusCode'], 405)
+
+    def test_internal_error(self):
+        raw_ops = {}
+        event = self.make_event(None, raw_ops)
+        resp = handler(event, None)
+        self.assertEqual(resp['statusCode'], 500)
+
+
 
 
 
