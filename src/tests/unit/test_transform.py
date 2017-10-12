@@ -289,6 +289,7 @@ class HTTPTests(S3MockerBase):
     def test_internal_error(self):
         raw_ops = {}
         event = self.make_event(None, raw_ops)
+        del event['queryStringParameters']
         resp = handler(event, None)
         self.assertEqual(resp['statusCode'], 500)
 
