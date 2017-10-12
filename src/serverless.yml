@@ -58,7 +58,6 @@ package:
 environment: &environment_defaults
   SERVERLESS_ENV: ${env:SERVERLESS_ENV}
   BUCKET: ${self:custom.${env:SERVERLESS_ENV}.bucket}
-  REGION: ${self:custom.${env:SERVERLESS_ENV}.aws_region}
 
 # List of Lambda function
 functions:
@@ -84,3 +83,44 @@ functions:
               - x-client-version
     environment:
       <<: *environment_defaults
+
+  logatron:
+    name: ${self:custom.${env:SERVERLESS_ENV}.name.lower}-snappy-logatron
+    handler: logatron.handler
+    timeout: 30
+    description: ${self:custom.${env:SERVERLESS_ENV}.name.human} Snappy self-log watcher and processor.
+    environment:
+      SERVERLESS_ENV: ${env:SERVERLESS_ENV}
+      SLACK_WEBHOOK_URL: https://hooks.slack.com/services/TODO
+
+
+# AWS Resources managed by Serverless
+resources:
+  Resources:
+    LogatronPermission:
+      Type: "AWS::Lambda::Permission"
+      Properties:
+        FunctionName:
+          Ref: LogatronLambdaFunction
+        Principal: "logs.us-west-2.amazonaws.com"
+        Action: "lambda:InvokeFunction"
+        SourceAccount:
+          Ref: AWS::AccountId
+        SourceArn: "arn:aws:logs:us-west-2:782097635144:log-group:/aws/lambda/${self:custom.${env:SERVERLESS_ENV}.name.lower}-snappy-*"
+
+    # Set up a log processor for each lambda function except logatron as that
+    # would be an infinite loop.
+    #
+    # FIXME: creating race condition while provision the stack
+    #
+    # LogSubscriptionTransform:
+    #  Type: "AWS::Logs::SubscriptionFilter"
+    #  DependsOn: LogatronPermission
+    #  Properties:
+    #    LogGroupName:
+    #      Ref: TransformLogGroup
+    #    FilterPattern: ""
+    #    DestinationArn:
+    #      Fn::GetAtt:
+    #        - "LogatronLambdaFunction"
+    #        - "Arn"

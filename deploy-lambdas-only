@@ -8,7 +8,7 @@ cd src
 
 funcs=$3
 if [ "$funcs" == "" ]; then
-  #funcs="logatron"
+  funcs="logatron"
   funcs="$funcs transform"
 fi
 

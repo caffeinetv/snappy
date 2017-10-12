@@ -181,7 +181,7 @@ def normalize_params(params):
 def param_validation(params):
     """
     Normalize and validate the params.
-    it silently removes the invalid or not supported operations.
+    It silently removes the invalid or not supported operations.
     Returns
     -------
     dict
@@ -276,6 +276,8 @@ def handler(event, context):
         method = event['httpMethod']
         if method == 'GET':
             s3_key, raw_ops = parse_event(event)
+            if not s3_key:
+                return response.not_found()
             source_filename = download_s3_obj(BUCKET, s3_key)
             if source_filename:
                 ops = param_validation(raw_ops)
@@ -287,7 +289,6 @@ def handler(event, context):
             else:
                 return response.not_found()
         else:
-            # FIXME: this should be Method Not Allowed
             return response.method_not_allowed()
     except Exception:
         LOG.exception("Unexpected error while processing request")
