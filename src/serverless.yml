@@ -7,23 +7,25 @@ custom:
   # Mappings from environment name to variables
   production:
     gatewayName: v1
+    aws_region: us-west-2
     name:
       human: Production
       lower: production
       short: prod
-    bucket: my-bucket
+    bucket: snappy-production-bucket
   devtest:
     gatewayName: devtest
+    aws_region: us-west-2
     name:
       human: DevTest
       lower: devtest
       short: dev
-    bucket: my-production-bucket
+    bucket: snappy-testing-bucket
 
 
 provider:
   name: aws
-  region: us-west-2
+  region: ${self:custom.${env:SERVERLESS_ENV}.aws_region}
   runtime: python3.6
   stage: ${self:custom.${env:SERVERLESS_ENV}.gatewayName}
   memorySize: 1024
@@ -33,7 +35,7 @@ provider:
       Action:
         - s3:GetObject
       Resource:
-        - "arn:aws:s3:::bucket/*"
+        - "arn:aws:s3:::${self:custom.${env:SERVERLESS_ENV}.bucket}/*"
 
 # This is how we package the Lambda function code. We specifically do not
 # include vendored packages that are already in the Lambda runtime.
@@ -67,7 +69,7 @@ functions:
     events:
       - http:
           method: get
-          path: /
+          path: /{proxy+}
           cors:
             origins:
               - '*'
@@ -108,14 +110,17 @@ resources:
 
     # Set up a log processor for each lambda function except logatron as that
     # would be an infinite loop.
-    LogSubscriptionTransform:
-      Type: "AWS::Logs::SubscriptionFilter"
-      DependsOn: LogatronPermission
-      Properties:
-        LogGroupName:
-          Ref: TransformLogGroup
-        FilterPattern: ""
-        DestinationArn:
-          Fn::GetAtt:
-            - "LogatronLambdaFunction"
-            - "Arn"
+    #
+    # FIXME: creating race condition while provision the stack
+    #
+    # LogSubscriptionTransform:
+    #  Type: "AWS::Logs::SubscriptionFilter"
+    #  DependsOn: LogatronPermission
+    #  Properties:
+    #    LogGroupName:
+    #      Ref: TransformLogGroup
+    #    FilterPattern: ""
+    #    DestinationArn:
+    #      Fn::GetAtt:
+    #        - "LogatronLambdaFunction"
+    #        - "Arn"

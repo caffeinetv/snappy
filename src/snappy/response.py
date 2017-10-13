@@ -3,9 +3,10 @@
 import json
 
 
-def generic(status_code, body):
+def generic(status_code, body, headers=None, **kwargs):
     """Generic JSON response"""
-    return {
+
+    base_resp = {
         'statusCode': status_code,
         'headers': {
             'Access-Control-Allow-Origin': '*',
@@ -13,6 +14,13 @@ def generic(status_code, body):
         },
         'body': body
     }
+
+    if headers:
+        base_resp['headers'].update(headers)
+
+    base_resp.update(kwargs)
+
+    return base_resp
 
 
 def ok(body):
@@ -63,3 +71,11 @@ def internal_server_error(message='Internal server error'):
         '_internal': message
     }
     return error(500, errors)
+
+
+def method_not_allowed(message='Method Not Allowed'):
+    """405 Method Not Allowed error response"""
+    errors = {
+        '_internal': message
+    }
+    return error(405, errors)

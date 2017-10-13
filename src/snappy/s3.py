@@ -2,6 +2,8 @@ import boto3
 from botocore.exceptions import ClientError
 import logging
 import unittest
+import os
+import ntpath
 import tempfile
 from snappy.settings import AWS_REGION
 
@@ -20,9 +22,12 @@ def download_s3_obj(bucket, key):
         the filename of the downloaded file or None if the file was not found
     """
     f_info = bucket + ':' + key
+    basename = ntpath.basename(key)
+    name, ext = os.path.splitext(basename)
     LOG.info('Downloading file from s3 at {}'.format(f_info))
     s3_res = get_aws_resource('s3')
     code, tmp_file = tempfile.mkstemp()
+    tmp_file = tmp_file + '.' + ext
     try:
         s3_res.Bucket(bucket).download_file(key, tmp_file)
     except ClientError:

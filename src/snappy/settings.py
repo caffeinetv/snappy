@@ -32,7 +32,6 @@ TRANSFORMATIONS_SCHEMA = {
     '$schema': 'http://json-schema.org/draft-04/schema#',
     'title': 'Supported Transformations Schema',
     'type': 'object',
-    # 'required': [],
     'properties': {
         'w': {
             'type': 'integer',
@@ -47,16 +46,16 @@ TRANSFORMATIONS_SCHEMA = {
         'fit': {
             'enum': ['clip', 'crop', 'bounds']
         },
-        'format': {
+        'fm': {
             'enum': SUPPORTED_FORMATS
         },
-        'quality': {
+        'q': {
             'type': 'integer',
             'minimum': 1,
             'maximum': 100
         },
         'dpr': {
-            'type': 'integer',
+            'type': 'number',
             'minimum': 1,
             'maximum': 8
         },

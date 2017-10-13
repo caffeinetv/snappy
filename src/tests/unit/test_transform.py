@@ -1,10 +1,13 @@
 import unittest
+import json
 import os
 from copy import copy
+import tempfile
 import PIL.Image
-from transform import image_transform, param_validation, InvalidParamsError
-from snappy.settings import DEFAULT_QUALITY_RATE, AGRESSIVE_QUALITY_RATE, SUPPORTED_FORMATS
-
+from tests.unit.snappy.s3_tests import S3MockerBase
+from snappy.settings import BUCKET, DEFAULT_QUALITY_RATE, AGRESSIVE_QUALITY_RATE, SUPPORTED_FORMATS
+from snappy.utils import base64_decode
+from transform import image_transform, param_validation, InvalidParamsError, make_response, parse_event, handler
 
 BASE_DIR = 'tests/data'
 
@@ -145,15 +148,18 @@ class ImageTranformTests(unittest.TestCase):
 class ParamValidationTests(unittest.TestCase):
 
     def test_valid(self):
-        ops = {'width': 10, 'height': 20, 'fit': 'crop',
+        ops = {'WIDTH': 10, 'height': 20, 'fit': 'bounds',
                'format': 'jpeg', 'quality': 75, 'auto': 'compress'}
-        self.assertIsNotNone(param_validation(ops))
-        ops = {'w': 10, 'h': 20, 'fit': 'crop',
+        params = param_validation(ops)
+        self.assertIn('w', params)
+        ops = {'w': 10, 'h': 20, 'fit': 'CROP',
                       'fm': 'jpeg', 'q': 75, 'auto': 'compress'}
-        self.assertIsNotNone(param_validation(ops))
-        ops = {'WIDTH': 10, 'height': 20, 'fit': 'CROP',
+        params = param_validation(ops)
+        self.assertIn('fit', params)
+        ops = {'w': 10, 'h': 20, 'f': 'clip', 'dpr': 5.3,
                       'fm': 'jpeg', 'q': 75, 'auto': 'compress'}
-        self.assertIsNotNone(param_validation(ops))
+        params = param_validation(ops)
+        self.assertEqual(ops, params)
 
     def test_dependencies(self):
         self.assertIsNotNone(param_validation({'w': 1}))
@@ -166,28 +172,137 @@ class ParamValidationTests(unittest.TestCase):
         #
         # `fit` is dependend of either `w` or `h`
         #
-        with self.assertRaises(InvalidParamsError) as exc:
-            param_validation({'fit': 'crop'})
+        params = param_validation({'fit': 'crop'})
+        self.assertEqual(params, {})
         
-        self.assertIn('fit', str(exc.exception))
-
 
     def test_invalid_schema(self):
-        ops = {'width': 'invalid', 'height': 20, 'fit': 'crop',
+        ops = {'width': 'invalid', 'h': 20, 'fit': 'crop', 'dpr': 1.1,
                       'format': 'jpeg', 'quality': 75, 'auto': 'compress'}
-        with self.assertRaises(InvalidParamsError) as exc:
-            param_validation(ops)
 
-        self.assertIn('schema', str(exc.exception))
+        params =   param_validation(ops)
+        self.assertNotIn('w', params)
+        self.assertIn('h', params)
+        self.assertIn('q', params)
+        self.assertIn('dpr', params)
 
-        ops = {'width': 'invalid', 'height': 20, 'fit': 'invalid',
+        ops = {'h': 'invalid', 'w': 20, 'fit': 'invalid', 'dpr': 'invalid',
                       'format': 'jpeg', 'quality': 75, 'auto': 'compress'}
-        with self.assertRaises(InvalidParamsError):
-            param_validation(ops)
+        params = param_validation(ops)
+        self.assertNotIn('h', params)
+        self.assertNotIn('dpr', params)
+        self.assertNotIn('fit', params)
+        self.assertIn('w', params)
+        self.assertIn('fm', params)
+        self.assertIn('auto', params)
 
     def test_invalid_quality_fmt(self):
-        ops = {'fm': 'gif', 'quality': 75}
-        with self.assertRaises(InvalidParamsError) as exc:
-            param_validation(ops)
-        
-        self.assertIn('lossy', str(exc.exception))
+        ops = {'fm': 'gif', 'q': 75}
+        params = param_validation(ops)
+        self.assertNotIn('q', params)
+        self.assertIn('fm', params)
+
+    def test_unknown_params(self):
+        ops = {'invalid': 'value', 'q': 75}
+        params = param_validation(ops)
+        self.assertEqual(ops, params)
+
+
+class HTTPTests(S3MockerBase):
+
+    def get_main_bucket(self):
+        return BUCKET
+
+    def test_make_response(self):
+        test_cc = 'max-age=3600'
+        bucket, key, body = self.put_s3(**{'CacheControl': test_cc})
+        filename = os.path.join(BASE_DIR, 'lincoln.jpg')
+        resp = make_response(filename, key)
+        self.assertEqual(test_cc, resp['headers']['Cache-Control'])
+        self.assertEqual(True, resp['isBase64Encoded'])
+        self.assertTrue(type(resp['body']) == str)
+        self.assertEqual('image/jpeg', resp['headers']['Content-Type'])
+
+        bucket, key, body = self.put_s3()
+        filename = os.path.join(BASE_DIR, 'terminal.gif')
+        resp = make_response(filename, key)
+        self.assertNotIn('Cache-Control', resp['headers'])
+        self.assertEqual('image/gif', resp['headers']['Content-Type'])
+
+    def test_parse_event(self):
+        with open('tests/data/lambda_proxy_event.json') as fp:
+            event = json.load(fp)
+        s3_key, raw_params = parse_event(event)
+        self.assertEqual(s3_key, 'test/path/file.png')
+        self.assertEqual(raw_params, {'width': "10", 'Height': "5", 'DPR': "5.3"})
+
+
+    def make_event(self, s3_key, raw_ops):
+        with open('tests/data/lambda_proxy_event.json') as fp:
+            event = json.load(fp)
+        event['pathParameters']['proxy'] = s3_key
+        event['queryStringParameters'] = raw_ops
+        return event
+
+    def test_handler(self):
+        filename = os.path.join(BASE_DIR, 'terminal.gif')
+        with open(filename, 'rb') as fp:
+            bucket, s3_key, body = self.put_s3(body=fp.read())
+        raw_ops = {'w': 100, 'h': 100}
+        event = self.make_event(s3_key, raw_ops)
+        resp = handler(event, None)
+        self.assertEqual(resp['statusCode'], 200)
+        img_data = base64_decode(resp['body'])
+        code, tmp_file = tempfile.mkstemp()
+        with open(tmp_file, 'wb') as fp:
+            fp.write(img_data)
+        img = PIL.Image.open(tmp_file)
+        self.assertEqual((raw_ops['w'], raw_ops['h']), img.size)
+
+
+    def test_no_ops(self):
+        filename = os.path.join(BASE_DIR, 'terminal.gif') 
+        with open(filename, 'rb') as fp:
+            bucket, s3_key, body = self.put_s3(body=fp.read())
+        raw_ops = None
+        event = self.make_event(s3_key, raw_ops)
+        img = PIL.Image.open(filename)
+        original_size = img.size
+        resp = handler(event, None)
+        img_data = base64_decode(resp['body'])
+        self.assertEqual(body, img_data)
+
+
+    def test_not_found(self):
+        raw_ops = {'w': 100, 'h': 100}
+        event = self.make_event('wont_find', raw_ops)
+        resp = handler(event, None)
+        self.assertEqual(resp['statusCode'], 404)
+
+
+    def test_method_not_allowed(self):
+        event = self.make_event('wont_find', {})
+        event['httpMethod'] = 'POST'
+        resp = handler(event, None)
+        self.assertEqual(resp['statusCode'], 405)
+
+    def test_internal_error(self):
+        raw_ops = {}
+        event = self.make_event(None, raw_ops)
+        del event['queryStringParameters']
+        resp = handler(event, None)
+        self.assertEqual(resp['statusCode'], 500)
+
+
+
+
+
+
+
+
+
+
+
+
+
+

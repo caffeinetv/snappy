@@ -4,11 +4,15 @@ from snappy.s3 import get_aws_resource, download_s3_obj, get_s3_obj
 from snappy.utils import rnd_str
 
 class S3MockerBase(unittest.TestCase):
+
+    def get_main_bucket(self):
+        return 'main_bucket'
+
     def setUp(self):
         self.s3_mock = mock_s3()
         self.s3_mock.start()
         self.s3_resource = get_aws_resource('s3')
-        self.main_bucket = 'main_bucket'
+        self.main_bucket = self.get_main_bucket()
         self.s3_resource.create_bucket(Bucket=self.main_bucket)
         super(S3MockerBase, self).setUp()
 
@@ -23,16 +27,21 @@ class S3MockerBase(unittest.TestCase):
             key = rnd_str(5)
         if not body:
             body = rnd_str(5)
+        
+        if type(body) == str:
+            body.encode()
 
-        self.s3_resource.Bucket(bucket).put_object(Key=key, Body=body.encode(), **kwargs)
+        self.s3_resource.Bucket(bucket).put_object(Key=key, Body=body, **kwargs)
         return bucket, key, body
         
 class S3Tests(S3MockerBase):
     def test_download_file(self):
-        bucket, key, body = self.put_s3()
+        ext = '.jpg'
+        bucket, key, body = self.put_s3(key='test' + ext)
         filename = download_s3_obj(bucket, key)
         with open(filename) as fp:
             self.assertEqual(fp.read(), body)
+        self.assertIn(ext, filename)
 
     def test_file_not_found(self):
         bucket, key, body = self.put_s3()
