@@ -3,6 +3,7 @@ import json
 import os
 from copy import copy
 import tempfile
+import vendored
 import PIL.Image
 from tests.unit.snappy.s3_tests import S3MockerBase
 from snappy.settings import BUCKET, DEFAULT_QUALITY_RATE, AGRESSIVE_QUALITY_RATE, SUPPORTED_FORMATS
