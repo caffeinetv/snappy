@@ -11,12 +11,13 @@ import vendored
 import jsonschema
 import boto3
 import magic
+import PIL.Image
 
 from snappy import response
 from snappy.s3 import get_s3_obj, download_s3_obj
 from snappy.settings import TRANSFORMATIONS_SCHEMA, PARAM_ALIASES, LOSSY_IMAGE_FMTS, BUCKET, DEFAULT_QUALITY_RATE, AGRESSIVE_QUALITY_RATE
 from snappy.utils import rnd_str, base64_encode
-
+import warnings
 
 # Set up the default logger
 LOG = logging.getLogger()
@@ -265,6 +266,19 @@ def parse_event(event):
         raw_ops = {}
     return s3_key, raw_ops
 
+def is_valid_image(filename):
+    img = None
+    warnings.filterwarnings('error')
+    try:
+        img = PIL.Image.open(filename)
+        img.verify()
+        return True
+    except Exception as e:
+        return False
+    finally:
+        warnings.resetwarnings()
+        if img:
+            img.close()
 
 def handler(event, context):
 
@@ -280,12 +294,17 @@ def handler(event, context):
                 return response.not_found()
             source_filename = download_s3_obj(BUCKET, s3_key)
             if source_filename:
-                ops = param_validation(raw_ops)
-                if any(ops):
-                    output_img = image_transform(source_filename, ops)
+                if is_valid_image(source_filename):
+                    ops = param_validation(raw_ops)
+                    if any(ops):
+                        output_img = image_transform(source_filename, ops)
+                    else:
+                        output_img = source_filename
                 else:
                     output_img = source_filename
+                
                 return make_response(output_img, s3_key)
+
             else:
                 return response.not_found()
         else:
@@ -293,6 +312,7 @@ def handler(event, context):
     except Exception:
         LOG.exception("Unexpected error while processing request")
         return response.internal_server_error()
+    
 
 
 LOG.info('Loaded successfully')

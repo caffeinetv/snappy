@@ -7,10 +7,11 @@ import PIL.Image
 from tests.unit.snappy.s3_tests import S3MockerBase
 from snappy.settings import BUCKET, DEFAULT_QUALITY_RATE, AGRESSIVE_QUALITY_RATE, SUPPORTED_FORMATS
 from snappy.utils import base64_decode
-from transform import image_transform, param_validation, InvalidParamsError, make_response, parse_event, handler
+from transform import image_transform, param_validation, InvalidParamsError, make_response, parse_event, handler, is_valid_image
 
 BASE_DIR = 'tests/data'
 
+ALL_IMAGES = ('lincoln.jpg', 'terminal.gif', 'dice.png')
 
 class ImageTranformTests(unittest.TestCase):
 
@@ -135,13 +136,27 @@ class ImageTranformTests(unittest.TestCase):
 
 
     def test_all_ops(self):
-        filename = os.path.join(BASE_DIR, 'lincoln.jpg')
-        side = 100
-        dpr = 2
-        operations = {'w': side,'h': side, 'fit': 'crop', 'fm': 'gif', 'dpr': dpr, 'q': 50, 'auto': 'compress'}
-        output = image_transform(filename, operations)
-        ow, oh = PIL.Image.open(output).size
-        self.assertEqual((side*dpr, side*dpr), (ow, oh))
+        for img in ALL_IMAGES:
+            filename = os.path.join(BASE_DIR, img)
+            side = 100
+            dpr = 2
+            operations = {'w': side,'h': side, 'fit': 'crop', 'fm': 'gif', 'dpr': dpr, 'q': 50, 'auto': 'compress'}
+            output = image_transform(filename, operations)
+            ow, oh = PIL.Image.open(output).size
+            self.assertEqual((side*dpr, side*dpr), (ow, oh))
+
+
+    def test_bad_image(self):
+        filename = os.path.join(BASE_DIR, 'bad_image.jpg')
+        operations = {'auto': 'compress'}
+        self.assertFalse(is_valid_image(filename))
+
+    def test_good_images(self):
+        for img in ALL_IMAGES:
+            filename = os.path.join(BASE_DIR, img)
+            operations = {'auto': 'compress'}
+            self.assertTrue(is_valid_image(filename))
+
 
 
 
@@ -266,8 +281,6 @@ class HTTPTests(S3MockerBase):
             bucket, s3_key, body = self.put_s3(body=fp.read())
         raw_ops = None
         event = self.make_event(s3_key, raw_ops)
-        img = PIL.Image.open(filename)
-        original_size = img.size
         resp = handler(event, None)
         img_data = base64_decode(resp['body'])
         self.assertEqual(body, img_data)
@@ -292,6 +305,18 @@ class HTTPTests(S3MockerBase):
         del event['queryStringParameters']
         resp = handler(event, None)
         self.assertEqual(resp['statusCode'], 500)
+
+    
+    def test_invalid_image(self):
+        filename = os.path.join(BASE_DIR, 'bad_image.jpg') 
+        with open(filename, 'rb') as fp:
+            bucket, s3_key, body = self.put_s3(body=fp.read())
+        raw_ops = None
+        event = self.make_event(s3_key, raw_ops)
+        resp = handler(event, None)
+        img_data = base64_decode(resp['body'])
+        self.assertEqual(body, img_data)
+
 
 
 
