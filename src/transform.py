@@ -11,7 +11,7 @@ import vendored
 import jsonschema
 import boto3
 import magic
-import PIL.Image
+import PIL
 
 from snappy import response
 from snappy.s3 import get_s3_obj, download_s3_obj
