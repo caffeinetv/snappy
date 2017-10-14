@@ -4,5 +4,10 @@ set -e
 
 source .env.sh
 
+./use-native-libs
+
 cd src
 serverless deploy
+
+cd -
+./restore-vendored

@@ -41,6 +41,7 @@ provider:
 # include vendored packages that are already in the Lambda runtime.
 package:
   exclude:
+    - vendored_tmp/
     - vendored/*.dist-info/**
     - vendored/boto3*/**
     - vendored/botocore*/**

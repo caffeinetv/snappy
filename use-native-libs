@@ -1,0 +1,7 @@
+#!/bin/bash
+
+rm -r src/vendored_tmp
+
+cp -r src/vendored src/vendored_tmp
+
+unzip -o native_libs.zip -d src/vendored

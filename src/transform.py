@@ -11,7 +11,8 @@ import vendored
 import jsonschema
 import boto3
 import magic
-import PIL
+from PIL import Image
+import PIL.Image
 
 from snappy import response
 from snappy.s3 import get_s3_obj, download_s3_obj
@@ -270,10 +271,11 @@ def is_valid_image(filename):
     img = None
     warnings.filterwarnings('error')
     try:
-        img = PIL.Image.open(filename)
+        img = Image.open(filename)
         img.verify()
         return True
     except Exception as e:
+        LOG.exception('Not valid image')
         return False
     finally:
         warnings.resetwarnings()
