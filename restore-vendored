@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cp -r src/vendored_tmp src/vendored
+cp -r src/vendored_tmp/ src/vendored/
 
 rm -r src/vendored_tmp
 
