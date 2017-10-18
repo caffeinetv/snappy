@@ -6,7 +6,7 @@ import tempfile
 import vendored
 import PIL.Image
 from tests.unit.snappy.s3_tests import S3MockerBase
-from snappy.settings import BUCKET, DEFAULT_QUALITY_RATE, AGRESSIVE_QUALITY_RATE, SUPPORTED_FORMATS
+from snappy.settings import BUCKET, DEFAULT_QUALITY_RATE, AGRESSIVE_QUALITY_RATE, SUPPORTED_FORMATS, MAX_IMAGE_W, MAX_IMAGE_H
 from snappy.utils import base64_decode
 from transform import image_transform, param_validation, InvalidParamsError, make_response, parse_event, handler, is_valid_image
 
@@ -223,6 +223,34 @@ class ParamValidationTests(unittest.TestCase):
         params = param_validation(ops)
         self.assertEqual(ops, params)
 
+    def test_min_max_dimensions(self):
+        ops = {'w': MAX_IMAGE_W*2, 'h': MAX_IMAGE_H*2}
+        max_dim = {'w': MAX_IMAGE_W, 'h': MAX_IMAGE_H}
+        params = param_validation(ops)
+        self.assertEqual(max_dim, params)
+        ops = {'w': 0, 'h': -1}
+        min_dim = {'w': 1, 'h': 1}
+        params = param_validation(ops)
+        self.assertEqual(min_dim, params)
+
+    def test_other_limits(self):
+        ops = {'q': 120}
+        params = param_validation(ops)
+        exp_ops = {'q': 100}
+        self.assertEqual(exp_ops, params)
+        ops = {'q': -1}
+        params = param_validation(ops)
+        exp_ops = {'q': 1}
+        self.assertEqual(exp_ops, params)
+
+        ops = {'dpr': 0.0}
+        params = param_validation(ops)
+        exp_ops = {'dpr': 1}
+        self.assertEqual(exp_ops, params)
+        ops = {'dpr': 10}
+        params = param_validation(ops)
+        exp_ops = {'dpr': 8}
+        self.assertEqual(exp_ops, params)
 
 class HTTPTests(S3MockerBase):
 

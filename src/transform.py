@@ -225,7 +225,11 @@ def param_validation(params):
                 jsonschema.validate(item, TRANSFORMATIONS_SCHEMA)
             except jsonschema.ValidationError as ve:
                 LOG.warning('Error validating schema for {}'.format(item))
-                norm_params.pop(k)
+                if ve.validator == 'maximum' or ve.validator == 'minimum':
+                    new_value = ve.validator_value
+                    norm_params[k] = new_value
+                else:
+                    norm_params.pop(k)
 
         if 'fit' in norm_params and not ('w' in norm_params or 'h' in norm_params):
             LOG.warning('`fit` is valid only for resize operations')
