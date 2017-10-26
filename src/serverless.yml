@@ -22,7 +22,6 @@ custom:
       short: dev
     bucket: snappy-testing-bucket
 
-
 provider:
   name: aws
   region: ${self:custom.${env:SERVERLESS_ENV}.aws_region}
@@ -41,7 +40,7 @@ provider:
 # include vendored packages that are already in the Lambda runtime.
 package:
   exclude:
-    - vendored_tmp/
+    - vendored_tmp/**
     - vendored/*.dist-info/**
     - vendored/boto3*/**
     - vendored/botocore*/**
@@ -54,6 +53,7 @@ package:
     - vendored/six*/**
     - tests/**
     - "**/*.pyc"
+    - node_modules/**
 
 # Service-wide environment variables here
 environment: &environment_defaults

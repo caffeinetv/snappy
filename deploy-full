@@ -11,3 +11,5 @@ serverless deploy
 
 cd -
 ./restore-vendored
+
+venv/bin/python binary_support.py
