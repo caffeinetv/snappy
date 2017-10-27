@@ -4,6 +4,8 @@ set -e
 
 source .env.sh
 
+./use-native-libs
+
 cd src
 
 funcs=$3
@@ -15,3 +17,6 @@ fi
 for f in $funcs; do
   serverless deploy function -f $f
 done
+
+cd -
+./restore-vendored
