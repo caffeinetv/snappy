@@ -6,13 +6,13 @@ service: snappy
 custom:
   # Mappings from environment name to variables
   production:
-    gatewayName: v1
+    gatewayName: production
     aws_region: us-west-2
     name:
       human: Production
       lower: production
       short: prod
-    bucket: snappy-production-bucket
+    bucket: static.caffeine.tv
   devtest:
     gatewayName: devtest
     aws_region: us-west-2
@@ -111,17 +111,14 @@ resources:
 
     # Set up a log processor for each lambda function except logatron as that
     # would be an infinite loop.
-    #
-    # FIXME: creating race condition while provision the stack
-    #
-    # LogSubscriptionTransform:
-    #  Type: "AWS::Logs::SubscriptionFilter"
-    #  DependsOn: LogatronPermission
-    #  Properties:
-    #    LogGroupName:
-    #      Ref: TransformLogGroup
-    #    FilterPattern: ""
-    #    DestinationArn:
-    #      Fn::GetAtt:
-    #        - "LogatronLambdaFunction"
-    #        - "Arn"
+    LogSubscriptionTransform:
+     Type: "AWS::Logs::SubscriptionFilter"
+     DependsOn: LogatronPermission
+     Properties:
+       LogGroupName:
+         Ref: TransformLogGroup
+       FilterPattern: ""
+       DestinationArn:
+         Fn::GetAtt:
+           - "LogatronLambdaFunction"
+           - "Arn"

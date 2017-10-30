@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import boto3
 import os
 import json
@@ -24,7 +25,7 @@ if api_id:
         restApiId=api_id, stageName=env, exportType='swagger', parameters=params)
     swagger = json.loads(response['body'].read())
     # print(json.dumps(swagger))
-    
+
     binary_support = {"x-amazon-apigateway-binary-media-types": [
         'image/png', 'image/jpeg', 'image/gif', 'image/webp', 'text/html']}
     swagger.update(binary_support)
