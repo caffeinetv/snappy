@@ -296,7 +296,6 @@ def handler(event, context):
 
     LOG.debug(json.dumps(event, indent=2))
     LOG.debug("Using %s bucket", BUCKET)
-    print_im_resources()
     try:
         # Do HTTP handling
         method = event['httpMethod']
