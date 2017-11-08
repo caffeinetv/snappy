@@ -84,6 +84,7 @@ functions:
               - x-client-version
     environment:
       <<: *environment_defaults
+      MAGICK_CONFIGURE_PATH: .
 
   logatron:
     name: ${self:custom.${env:SERVERLESS_ENV}.name.lower}-snappy-logatron

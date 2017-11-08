@@ -286,11 +286,16 @@ def is_valid_image(filename):
         if img:
             img.close()
 
+
+def print_im_resources():
+    args = ['identify', '-list', 'resource']
+    im_result = subprocess.check_output(args)
+    LOG.debug('\n{}'.format(im_result.decode()))
+
 def handler(event, context):
 
     LOG.debug(json.dumps(event, indent=2))
     LOG.debug("Using %s bucket", BUCKET)
-
     try:
         # Do HTTP handling
         method = event['httpMethod']
