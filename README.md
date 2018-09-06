@@ -60,20 +60,13 @@ All transformations are specified as query string parameters. They can be specif
 ### Order of Transformations
 
 Although the query string parameters can be specified in any order, transformations are applied in a set order:
-width, height and fit
-format and quality
-auto and dpr
+1.  `width`, `height` and `fit`
+1.  `format` and `quality`
+1.  `auto` and `dpr`
 
 ### Meta-data removal
 
 When compressing the image, all metadata (for example EXIF, XMP or ICC) should be removed to reduce file size. If an image contains an ICC profile, the data is applied directly to the image to ensure color output is correct.
-
-
-
-
-
-
-
 
 
 ## Development pre-req: Serverless
