@@ -156,17 +156,27 @@ All AWS Lambda functions log to CloudWatch Logs. You can login to the console an
 
 ### Testing
 
-We use nose for testing Python code. We also use the `nose-watch` addition for test driven development (TDD) which means the tests will run everytime a file is saved. To run the tests:
+We use nose for testing Python code. We also use the `nose-watch` addition for test driven development (TDD). To run the tests:
 
     mkvirtualenv
     pip install -r src/dev_requirements.txt
     pip install -r src/requirements.txt
     ./test
 
-Press `Ctrl-C` to stop the TDD flow.
+You can now edit files and have the tests run any time you save them. Press `Ctrl-C` to stop the TDD flow.
+
+
+## About Caffine
+
+[Caffeine](https://www.caffeine.tv/about.html) is a new way for you and your friends to enjoy and create live gaming, entertainment, and creative arts broadcasts. Simplicity is at the core of what we do: from our clean design to our simple-to-use tools, we make it incredibly easy for anyone to start broadcasting in no time.
+
+We're hiring: [jobs@caffeine.tv](mailto:jobs@caffeine.tv)
 
 
 ## License
 
-## Caffine
+Copyright 2018 Caffeine Inc.
 
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
