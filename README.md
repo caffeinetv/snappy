@@ -1,5 +1,7 @@
 # Snappy
 
+[![Build Status](https://travis-ci.com/caffeinetv/snappy.svg?branch=master)](https://travis-ci.com/caffeinetv/snappy)
+
 Snappy is an image processing service developed by [Caffeine](https://www.caffeine.tv/). It is designed to be used behind a CDN, such as CloudFront, to cache the results of the image manipulation. Snappy is compatible with a subset of both [Imgix](https://docs.imgix.com/apis/url) and [Fastly’s Image Optimizer](https://docs.fastly.com/api/imageopto/#api).
 
 When a request comes in, Snappy will read a file from S3, perform some set of transformation on the image using Imagemagick and return the content of that image to be viewed in a web browser or client.
