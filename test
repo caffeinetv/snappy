@@ -14,4 +14,4 @@ else
 fi
 
 cd src
-nosetests tests/ --rednose $nose_args
+nosetests --exclude-dir=vendored --rednose $nose_args
