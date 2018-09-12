@@ -5,7 +5,7 @@ from copy import copy
 import tempfile
 import vendored
 import PIL.Image
-from tests.unit.snappy.s3_tests import S3MockerBase
+from tests.unit.snappy_tests.s3_tests import S3MockerBase
 from snappy.settings import BUCKET, DEFAULT_QUALITY_RATE, AGRESSIVE_QUALITY_RATE, SUPPORTED_FORMATS, MAX_IMAGE_W, MAX_IMAGE_H
 from snappy.utils import base64_decode
 from transform import image_transform, param_validation, InvalidParamsError, make_response, parse_event, handler, is_valid_image
@@ -80,9 +80,9 @@ class ImageTranformTests(unittest.TestCase):
 
 
     def test_format(self):
-        
+
         filename = os.path.join(BASE_DIR, 'lincoln.jpg')
-        
+
         in_file_size = os.stat(filename).st_size
         operations = {'fm': 'png'}
         output = image_transform(filename, operations)
@@ -95,7 +95,7 @@ class ImageTranformTests(unittest.TestCase):
         output = image_transform(filename, operations)
         self.assertIn('jpeg', output)
         self.assertGreater(os.stat(output).st_size, in_file_size)
-        
+
         for fm in SUPPORTED_FORMATS:
             #FIXME: https://github.com/caffeinetv/snappy/issues/10
             if fm != 'webp':
@@ -113,7 +113,7 @@ class ImageTranformTests(unittest.TestCase):
         operations = {'w': w, 'h': h}
         output = image_transform(filename, operations)
         out_file_size = os.stat(output).st_size
-        
+
         operations = {'q': DEFAULT_QUALITY_RATE - 5}
         output = image_transform(filename, operations)
         self.assertLess(os.stat(output).st_size, out_file_size)
@@ -127,7 +127,7 @@ class ImageTranformTests(unittest.TestCase):
         output = image_transform(filename, operations)
         ow, oh = PIL.Image.open(output).size
         self.assertEqual((w*dpr, h*dpr), (ow, oh))
-        
+
         scale = 2
         w, h = w*scale, h*scale
         operations = {'dpr': dpr, 'w': w, 'h': h}
@@ -190,7 +190,7 @@ class ParamValidationTests(unittest.TestCase):
         #
         params = param_validation({'fit': 'crop'})
         self.assertEqual(params, {})
-        
+
 
     def test_invalid_schema(self):
         ops = {'width': 'invalid', 'h': 20, 'fit': 'crop', 'dpr': 1.1,
@@ -305,7 +305,7 @@ class HTTPTests(S3MockerBase):
 
 
     def test_no_ops(self):
-        filename = os.path.join(BASE_DIR, 'terminal.gif') 
+        filename = os.path.join(BASE_DIR, 'terminal.gif')
         with open(filename, 'rb') as fp:
             bucket, s3_key, body = self.put_s3(body=fp.read())
         raw_ops = None
@@ -335,9 +335,9 @@ class HTTPTests(S3MockerBase):
         resp = handler(event, None)
         self.assertEqual(resp['statusCode'], 500)
 
-    
+
     def test_invalid_image(self):
-        filename = os.path.join(BASE_DIR, 'bad_image.jpg') 
+        filename = os.path.join(BASE_DIR, 'bad_image.jpg')
         with open(filename, 'rb') as fp:
             bucket, s3_key, body = self.put_s3(body=fp.read())
         raw_ops = None

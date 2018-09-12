@@ -1,7 +1,5 @@
 # Snappy
 
-[![Build Status](https://travis-ci.com/caffeinetv/snappy.svg?token=8muJrP6bsuRyDRQ1LQyY&branch=master)](https://travis-ci.com/caffeinetv/snappy)
-
 Snappy is an image processing service developed by [Caffeine](https://www.caffeine.tv/). It is designed to be used behind a CDN, such as CloudFront, to cache the results of the image manipulation. Snappy is compatible with a subset of both [Imgix](https://docs.imgix.com/apis/url) and [Fastly’s Image Optimizer](https://docs.fastly.com/api/imageopto/#api).
 
 When a request comes in, Snappy will read a file from S3, perform some set of transformation on the image using Imagemagick and return the content of that image to be viewed in a web browser or client.
@@ -76,6 +74,10 @@ This project uses the [Serverless Framework](https://serverless.com/framework/do
     npm install -g serverless
 
 Yes, we are installing a NodeJS project to deploy a Python application. The serverless framework is just a tool, and a very good one at that, so get over it. :) NodeJS is not used at runtime.
+
+For local testing, you will also want Imagemagick installed. For macOS, that is:
+
+    brew install imagemagick
 
 
 ## Development
