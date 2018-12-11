@@ -1,5 +1,5 @@
 boto3==1.7.84
-requests==2.19.1
+requests==2.21.0
 jsonschema==2.6.0
 python-magic==0.4.15
 Pillow==5.2.0
